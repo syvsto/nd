@@ -1,0 +1,6 @@
+{
+    "*": {
+        "make": "cargo check",
+        "dispatch": "cargo run"
+    }
+}
