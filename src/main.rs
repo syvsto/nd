@@ -1,4 +1,7 @@
 use std::io::{self, Write};
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 struct Lexemes {
@@ -9,6 +12,12 @@ struct Lexemes {
 struct AST {
     tokens: Vec<Token>,
 }
+ 
+#[derive(Debug)]
+enum Control {
+    ContinueToThen,
+    DefineWord,
+}
 
 #[derive(Debug)]
 enum Val {
@@ -16,7 +25,7 @@ enum Val {
     Bool(bool),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 enum Token {
     Word(String),
     Number(f64),
@@ -34,8 +43,8 @@ impl Token {
 
         match word {
             "print" => Builtin(Print),
-            "branch" => Builtin(Branch),
-            "branch?" => Builtin(Cond),
+            "if" => Builtin(If),
+            "then" => Builtin(Then),
             "+" => Builtin(Plus),
             "=" => Builtin(Equal),
             "-" => Builtin(Minus),
@@ -46,7 +55,7 @@ impl Token {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 enum Builtins {
     Print,
     Plus,
@@ -54,12 +63,14 @@ enum Builtins {
     Minus,
     Multiply,
     Divide,
-    Branch,
-    Cond,
+    If,
+    Then,
+    WordStart,
+    WordEnd,
 }
 
 impl Builtins {
-    fn eval(&self, stack: &mut Vec<Val>) -> Option<usize> {
+    fn eval(&self, stack: &mut Vec<Val>) -> Option<Control> {
         use Builtins::*;
         match self {
             Print => {
@@ -119,25 +130,25 @@ impl Builtins {
                 }
             }
 
-            Branch => {
-                let idx = stack.pop().expect("Couldn't pop from stack");
-                match idx {
-                    Val::Float(a) => return Some(a as usize),
-                    _ => panic!("Couldn't get index to stack location, wrong type."),
-                }
-            }
-            Cond => {
-                let idx = stack.pop().expect("Couldn't pop from stack");
+            Then => {}
+
+            If => {
                 let comparison = stack.pop().expect("Couldn't pop from stack");
-                match (idx, comparison) {
-                    (Val::Float(i), Val::Bool(cmp)) => {
-                        if cmp {
-                            return Some(i as usize);
+                match comparison {
+                    Val::Bool(cmp) => {
+                        if !cmp {
+                            return Some(Control::ContinueToThen);
                         }
                     }
                     _ => panic!("Wrong type in comparison or index."),
                 }
             }
+
+            WordStart => {
+                return Some(Control::DefineWord);
+            }
+
+            WordEnd => {}
         }
         None
     }
@@ -161,17 +172,50 @@ fn parse(lexemes: Lexemes) -> AST {
     AST { tokens: v }
 }
 
-fn eval(ast: AST, stack: &mut Vec<Val>, debug: bool) {
+fn next_of_type(ty: Builtins, tokens: &[Token]) -> Option<usize> {
+   tokens.iter()
+       .position(|token| match token {
+           Token::Builtin(t) => *t == ty,
+           _ => false
+       })
+}
+
+fn peek_word(tokens: &[Token]) -> Option<String> {
+    match &tokens[0] {
+        Token::Word(name) => Some(name.clone()),
+        _ => None,
+    }
+}
+
+fn eval(ast: &AST, stack: &mut Vec<Val>, words: Rc<RefCell<HashMap<String, AST>>>, debug: bool) {
     use Token::*;
 
     let mut i = 0;
     while i < ast.tokens.len() {
         match &ast.tokens[i] {
-            Word(_) => (),
+            Word(name) => {
+                if let Some(word) = words.borrow().get(name) {
+                    eval(word, stack, words.clone(), debug);
+                }
+            }
             Number(n) => stack.push(Val::Float(*n)),
             Builtin(func) => {
-                if let Some(idx) = func.eval(stack) {
-                    i = idx;
+                if let Some(ctrl) = func.eval(stack) {
+                    match ctrl {
+                        Control::ContinueToThen => {
+                            if let Some(v) = next_of_type(Builtins::Then, &ast.tokens) {
+                                i = v;
+                            }
+                        }
+                        Control::DefineWord => {
+                            let mut word = AST { tokens:  vec![] };
+                            let name = peek_word(&ast.tokens[i..]).expect("First token in function definition wasn't a word.");
+                            while ast.tokens[i] != Builtin(Builtins::WordEnd) {
+                                word.tokens.push(ast.tokens[i].clone())
+                            }
+                            words.borrow_mut().insert(name, word);
+                        }
+                    }
                 }
             }
         }
@@ -186,8 +230,9 @@ fn main() -> io::Result<()> {
     let mut buffer = String::new();
 
     let mut stack = Vec::new();
+    let mut words = Rc::new(RefCell::new(HashMap::new()));
 
-    let debugging = true;
+    let debugging = false;
 
     loop {
         buffer.clear();
@@ -196,7 +241,7 @@ fn main() -> io::Result<()> {
 
         let lexemes = lex(&buffer);
         let ast = parse(lexemes);
-        eval(ast, &mut stack, debugging);
+        eval(&ast, &mut stack, words.clone(), debugging);
 
         io::stdout().flush().unwrap();
 
