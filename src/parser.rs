@@ -7,7 +7,13 @@ struct Lexemes {
 pub struct TokenStack {
     pub tokens: Vec<Token>,
 }
- 
+
+impl TokenStack {
+    pub fn new_from_tokens(tokens: &[Token]) -> Self {
+        Self { tokens: tokens.to_vec() }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Word(String),
@@ -33,6 +39,8 @@ impl Token {
             "-" => Builtin(Minus),
             "*" => Builtin(Multiply),
             "/" => Builtin(Divide),
+            ":" => Builtin(WordStart),
+            ";" => Builtin(WordEnd),
             _ => Word(word.to_string()),
         }
     }
@@ -63,7 +71,9 @@ fn lex(buf: &str) -> Lexemes {
 }
 
 fn tokenize(lexemes: Lexemes) -> TokenStack {
-    let v = lexemes.words.iter()
+    let v = lexemes
+        .words
+        .iter()
         .map(|word| Token::parse(word))
         .collect();
 

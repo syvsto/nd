@@ -1,14 +1,19 @@
 use std::io::{self, Write};
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
-mod parser;
 mod eval;
+mod parser;
 use eval::eval;
 
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
 
+    let debugging = true;
 
-    let debugging = false;
+    let mut stack = Vec::new();
+    let words = Rc::new(RefCell::new(HashMap::new()));
 
     loop {
         buffer.clear();
@@ -16,7 +21,7 @@ fn main() -> io::Result<()> {
         io::stdout().flush().unwrap();
 
         let ast = parser::parse(&buffer);
-        eval(&ast, debugging);
+        eval(&ast, &mut stack, words.clone(), debugging);
 
         io::stdout().flush().unwrap();
 

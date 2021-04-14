@@ -1,26 +1,23 @@
-// use std::rc::Rc;
-// use std::cell::RefCell;
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::parser::{Builtins, Token, TokenStack};
 
 #[derive(Debug)]
-enum Control {
+enum Op {
     ContinueToThen,
     DefineWord,
 }
 
 #[derive(Debug)]
-enum Val {
+pub enum Val {
     Float(f64),
     Bool(bool),
 }
 
-
-
-
 impl Builtins {
-    fn eval(&self, stack: &mut Vec<Val>) -> Option<Control> {
+    fn eval(&self, stack: &mut Vec<Val>) -> Option<Op> {
         use Builtins::*;
         match self {
             Print => {
@@ -87,7 +84,7 @@ impl Builtins {
                 match comparison {
                     Val::Bool(cmp) => {
                         if !cmp {
-                            return Some(Control::ContinueToThen);
+                            return Some(Op::ContinueToThen);
                         }
                     }
                     _ => panic!("Wrong type in comparison or index."),
@@ -95,7 +92,7 @@ impl Builtins {
             }
 
             WordStart => {
-                return Some(Control::DefineWord);
+                return Some(Op::DefineWord);
             }
 
             WordEnd => {}
@@ -105,58 +102,61 @@ impl Builtins {
 }
 
 fn next_of_type(ty: Builtins, tokens: &[Token]) -> Option<usize> {
-   tokens.iter()
-       .position(|token| match token {
-           Token::Builtin(t) => *t == ty,
-           _ => false
-       })
+    tokens.iter().position(|token| match token {
+        Token::Builtin(t) => *t == ty,
+        _ => false,
+    })
 }
 
-fn peek_word(tokens: &[Token]) -> Option<String> {
-    match &tokens[0] {
-        Token::Word(name) => Some(name.clone()),
-        _ => None,
+fn eval_op(op: &Op, current_index: usize, ast: &TokenStack, words: Rc<RefCell<HashMap<String, TokenStack>>>) -> usize {
+    use Op::*;
+
+    match op {
+        ContinueToThen => {
+            if let Some(v) = next_of_type(Builtins::Then, &ast.tokens) {
+                return v;
+            }
+        }
+        DefineWord => {
+            let pos = ast.tokens.iter().position(|token| *token == Token::Builtin(Builtins::WordEnd)).expect("Couldn't find end to definition");
+            if let Some((name, definition)) = ast.tokens[current_index+1..pos].split_first() {
+                if let Token::Word(n) = name {
+                    words.borrow_mut().insert(n.clone(), TokenStack::new_from_tokens(definition));
+                }
+            }
+        }
     }
+
+    current_index
 }
 
-pub fn eval(ast: &TokenStack, debug: bool) {
+pub fn eval(ast: &TokenStack, stack: &mut Vec<Val>, words: Rc<RefCell<HashMap<String, TokenStack>>>, debug: bool) {
     use Token::*;
 
-    let mut words = HashMap::new();
-    let mut stack = Vec::new();
-
     let mut i = 0;
+
     while i < ast.tokens.len() {
         match &ast.tokens[i] {
             Word(name) => {
-                if let Some(word) = words.get(name) {
-                    eval(word, debug);
+                if let Some(word) = words.borrow().get(name) {
+                    eval(word, stack, words.clone(), debug);
                 }
             }
             Number(n) => stack.push(Val::Float(*n)),
             Builtin(func) => {
-                if let Some(ctrl) = func.eval(&mut stack) {
-                    match ctrl {
-                        Control::ContinueToThen => {
-                            if let Some(v) = next_of_type(Builtins::Then, &ast.tokens) {
-                                i = v;
-                            }
-                        }
-                        Control::DefineWord => {
-                            let mut word = TokenStack { tokens:  vec![] };
-                            let name = peek_word(&ast.tokens[i..]).expect("First token in function definition wasn't a word.");
-                            while ast.tokens[i] != Builtin(Builtins::WordEnd) {
-                                word.tokens.push(ast.tokens[i].clone())
-                            }
-                            words.insert(name, word);
-                        }
-                    }
+                if let Some(ref op) = func.eval(stack) {
+                    i = eval_op(op, i, &ast, words.clone());
                 }
             }
         }
-        if debug {
-            println!("{:?}", stack);
-        }
         i += 1;
     }
+
+    if debug {
+        println!("{:?}", stack);
+        println!("{:?}", words.borrow());
+    }
+
 }
+
+
