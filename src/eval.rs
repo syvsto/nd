@@ -8,7 +8,7 @@ enum Op {
     ContinueToDefinitionEnd,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Val {
     Float(f64),
     Bool(bool),
@@ -25,8 +25,8 @@ impl Builtins {
             }
 
             Plus => {
-                let n1 = stack.pop().expect("Couldn't pop from stack");
-                let n2 = stack.pop().expect("Couldn't pop from stack");
+                let n1 = stack.pop().expect("Couldn't pop first value for addition from stack");
+                let n2 = stack.pop().expect("Couldn't pop second value for addition from stack");
                 match (n1, n2) {
                     (Val::Float(a), Val::Float(b)) => stack.push(Val::Float(a + b)),
                     _ => panic!("Couldn't add values, not all values were numbers."),
@@ -34,8 +34,8 @@ impl Builtins {
             }
 
             Equal => {
-                let n1 = stack.pop().expect("Couldn't pop from stack");
-                let n2 = stack.pop().expect("Couldn't pop from stack");
+                let n1 = stack.pop().expect("Couldn't pop first value for comparison from stack");
+                let n2 = stack.pop().expect("Couldn't pop second value for comparison from stack");
                 match (n1, n2) {
                     (Val::Float(a), Val::Float(b)) => {
                         if a == b {
@@ -49,8 +49,8 @@ impl Builtins {
             }
 
             Minus => {
-                let n1 = stack.pop().expect("Couldn't pop from stack");
-                let n2 = stack.pop().expect("Couldn't pop from stack");
+                let n1 = stack.pop().expect("Couldn't pop first value for subtraction from stack");
+                let n2 = stack.pop().expect("Couldn't pop second value for subtraction from stack");
                 match (n1, n2) {
                     (Val::Float(a), Val::Float(b)) => stack.push(Val::Float(a - b)),
                     _ => panic!("Couldn't subtract values, not all values were numbers."),
@@ -58,8 +58,8 @@ impl Builtins {
             }
 
             Multiply => {
-                let n1 = stack.pop().expect("Couldn't pop from stack");
-                let n2 = stack.pop().expect("Couldn't pop from stack");
+                let n1 = stack.pop().expect("Couldn't pop first value for multiplication from stack");
+                let n2 = stack.pop().expect("Couldn't pop second value for multiplication from stack");
                 match (n1, n2) {
                     (Val::Float(a), Val::Float(b)) => stack.push(Val::Float(a * b)),
                     _ => panic!("Couldn't multiply values, not all values were numbers."),
@@ -67,8 +67,8 @@ impl Builtins {
             }
 
             Divide => {
-                let n1 = stack.pop().expect("Couldn't pop from stack");
-                let n2 = stack.pop().expect("Couldn't pop from stack");
+                let n1 = stack.pop().expect("Couldn't pop first value for division from stack");
+                let n2 = stack.pop().expect("Couldn't pop second value for division from stack");
                 match (n1, n2) {
                     (Val::Float(a), Val::Float(b)) => stack.push(Val::Float(a / b)),
                     _ => panic!("Couldn't divide values, not all values were numbers."),
@@ -76,7 +76,7 @@ impl Builtins {
             }
 
             If => {
-                let comparison = stack.pop().expect("Couldn't pop from stack");
+                let comparison = stack.pop().expect("Couldn't pop boolean value for comparison from stack");
                 match comparison {
                     Val::Bool(cmp) => {
                         if !cmp {
@@ -90,6 +90,13 @@ impl Builtins {
             WordStart => {
                 return Some(Op::ContinueToDefinitionEnd);
             }
+
+            Duplicate => {
+                let n = stack.pop().expect("Couldn't duplicate element, nothing on stack");
+                stack.push(n.clone());
+                stack.push(n);
+            }
+
             _ => {}
         }
         None
