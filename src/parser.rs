@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 struct Lexemes {
     words: Vec<String>,
@@ -10,7 +12,53 @@ pub struct TokenStack {
 
 impl TokenStack {
     pub fn new_from_tokens(tokens: &[Token]) -> Self {
-        Self { tokens: tokens.to_vec() }
+        Self {
+            tokens: tokens.to_vec(),
+        }
+    }
+
+    fn tokenize(lexemes: Lexemes) -> Self {
+        let v = lexemes
+            .words
+            .iter()
+            .map(|word| Token::parse(word))
+            .collect();
+
+        Self { tokens: v }
+    }
+
+    fn resolve_words(&self) -> HashMap<String, TokenStack> {
+        let token_start: Vec<_> = self.tokens.iter().enumerate().filter(|(_, token)| {
+            match_token(token, Builtins::WordStart)
+        }).collect();
+        let token_end: Vec<_> = self.tokens.iter().enumerate().filter(|(_, token)| {
+             match_token(token, Builtins::WordEnd)
+        }).collect();
+
+        let valid_syntax = token_start.len() == token_end.len();
+
+        if !valid_syntax {
+            panic!("Couldn't parse word definitions, not all word starts and ends match.");
+        }
+
+        let mut words = HashMap::new();
+        for ((start, _), (end, _)) in token_start.iter().zip(token_end.iter()) {
+            if let Some((name, definition)) = &self.tokens[start+1..*end].split_first() {
+                if let Token::Word(n) = name {
+                    words.insert(n.clone(), TokenStack::new_from_tokens(definition));
+                }
+            }
+        }
+
+        words
+    }
+}
+
+fn match_token(token: &Token, ty: Builtins) -> bool {
+    if let Token::Builtin(b) = token {
+        *b == ty
+    } else {
+        false
     }
 }
 
@@ -70,16 +118,9 @@ fn lex(buf: &str) -> Lexemes {
     }
 }
 
-fn tokenize(lexemes: Lexemes) -> TokenStack {
-    let v = lexemes
-        .words
-        .iter()
-        .map(|word| Token::parse(word))
-        .collect();
-
-    TokenStack { tokens: v }
-}
-
-pub fn parse(buf: &str) -> TokenStack {
-    tokenize(lex(buf))
+pub fn parse(buf: &str) -> (TokenStack, HashMap<String, TokenStack>) {
+    let lexemes = lex(buf);
+    let global_stack = TokenStack::tokenize(lexemes);
+    let words = global_stack.resolve_words();
+    (global_stack, words)
 }

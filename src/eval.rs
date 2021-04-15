@@ -1,5 +1,3 @@
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::parser::{Builtins, Token, TokenStack};
@@ -7,7 +5,7 @@ use crate::parser::{Builtins, Token, TokenStack};
 #[derive(Debug)]
 enum Op {
     ContinueToThen,
-    DefineWord,
+    ContinueToDefinitionEnd,
 }
 
 #[derive(Debug)]
@@ -77,8 +75,6 @@ impl Builtins {
                 }
             }
 
-            Then => {}
-
             If => {
                 let comparison = stack.pop().expect("Couldn't pop from stack");
                 match comparison {
@@ -92,10 +88,9 @@ impl Builtins {
             }
 
             WordStart => {
-                return Some(Op::DefineWord);
+                return Some(Op::ContinueToDefinitionEnd);
             }
-
-            WordEnd => {}
+            _ => {}
         }
         None
     }
@@ -108,7 +103,11 @@ fn next_of_type(ty: Builtins, tokens: &[Token]) -> Option<usize> {
     })
 }
 
-fn eval_op(op: &Op, current_index: usize, ast: &TokenStack, words: Rc<RefCell<HashMap<String, TokenStack>>>) -> usize {
+fn eval_op(
+    op: &Op,
+    current_index: usize,
+    ast: &TokenStack,
+) -> usize {
     use Op::*;
 
     match op {
@@ -117,12 +116,9 @@ fn eval_op(op: &Op, current_index: usize, ast: &TokenStack, words: Rc<RefCell<Ha
                 return v;
             }
         }
-        DefineWord => {
-            let pos = ast.tokens.iter().position(|token| *token == Token::Builtin(Builtins::WordEnd)).expect("Couldn't find end to definition");
-            if let Some((name, definition)) = ast.tokens[current_index+1..pos].split_first() {
-                if let Token::Word(n) = name {
-                    words.borrow_mut().insert(n.clone(), TokenStack::new_from_tokens(definition));
-                }
+        ContinueToDefinitionEnd => {
+            if let Some(v) = next_of_type(Builtins::WordEnd, &ast.tokens) {
+                return v;
             }
         }
     }
@@ -130,7 +126,12 @@ fn eval_op(op: &Op, current_index: usize, ast: &TokenStack, words: Rc<RefCell<Ha
     current_index
 }
 
-pub fn eval(ast: &TokenStack, stack: &mut Vec<Val>, words: Rc<RefCell<HashMap<String, TokenStack>>>, debug: bool) {
+pub fn eval(
+    ast: &TokenStack,
+    stack: &mut Vec<Val>,
+    words: &HashMap<String, TokenStack>,
+    debug: bool,
+) {
     use Token::*;
 
     let mut i = 0;
@@ -138,14 +139,14 @@ pub fn eval(ast: &TokenStack, stack: &mut Vec<Val>, words: Rc<RefCell<HashMap<St
     while i < ast.tokens.len() {
         match &ast.tokens[i] {
             Word(name) => {
-                if let Some(word) = words.borrow().get(name) {
-                    eval(word, stack, words.clone(), debug);
+                if let Some(word) = words.get(name) {
+                    eval(word, stack, &words, debug);
                 }
             }
             Number(n) => stack.push(Val::Float(*n)),
             Builtin(func) => {
                 if let Some(ref op) = func.eval(stack) {
-                    i = eval_op(op, i, &ast, words.clone());
+                    i = eval_op(op, i, &ast);
                 }
             }
         }
@@ -154,9 +155,6 @@ pub fn eval(ast: &TokenStack, stack: &mut Vec<Val>, words: Rc<RefCell<HashMap<St
 
     if debug {
         println!("{:?}", stack);
-        println!("{:?}", words.borrow());
+        println!("{:?}", words);
     }
-
 }
-
-
