@@ -97,7 +97,16 @@ impl Builtins {
                 stack.push(n);
             }
 
-            _ => {}
+            Swap => {
+                let n1 = stack.pop().expect("Couldn't pop first value for swapping.");
+                let n2 = stack.pop().expect("Couldn't pop second value for swapping.");
+
+                stack.push(n1);
+                stack.push(n2);
+            }
+
+            Then => {}
+            WordEnd => {}
         }
         None
     }
