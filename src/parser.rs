@@ -1,72 +1,205 @@
 use std::collections::HashMap;
 
-#[derive(Debug)]
-struct Lexemes {
-    words: Vec<String>,
+#[derive(Debug, Clone, PartialEq)]
+enum LexemeType {
+    Number(f64),
+    Char(char),
+    Word(String),
+    Print,
+    If,
+    Forward,
+    Plus,
+    Equal,
+    Minus,
+    Multiply,
+    Divide,
+    Duplicate,
+    Swap,
+    WordStart,
+    WordEnd,
+    ArrayStart,
+    ArrayEnd,
 }
 
-#[derive(Debug)]
+impl LexemeType {
+    fn new(s: &str) -> LexemeType {
+        if let Ok(w) = s.trim().parse::<f64>() {
+            return LexemeType::Number(w);
+        }
+
+        let mut cs = s.chars();
+        if cs.nth(0) == Some('\'') {
+            return LexemeType::Char(cs.nth(1).expect("Couldn't parse character."));
+        }
+
+        match s {
+            "print" => LexemeType::Print,
+            "?" => LexemeType::If,
+            "->" => LexemeType::Forward,
+            "+" => LexemeType::Plus,
+            "=" => LexemeType::Equal,
+            "-" => LexemeType::Minus,
+            "*" => LexemeType::Multiply,
+            "/" => LexemeType::Divide,
+            "dup" => LexemeType::Duplicate,
+            "swap" => LexemeType::Swap,
+            ":" => LexemeType::WordStart,
+            ";" => LexemeType::WordEnd,
+            "[" => LexemeType::ArrayStart,
+            "]" => LexemeType::ArrayEnd,
+            _ => LexemeType::Word(s.to_string()),
+        }
+    }
+
+    fn is_number(&self) -> bool {
+        match self {
+            LexemeType::Number(_) => true,
+            _ => false,
+        }
+    }
+
+    fn get_primitive_number(&self) -> Option<f64> {
+        match self {
+            LexemeType::Number(n) => Some(*n),
+            _ => None,
+        }
+    }
+
+    fn is_char(&self) -> bool {
+        match self {
+            LexemeType::Char(_) => true,
+            _ => false,
+        }
+    }
+
+    fn get_primitive_char(&self) -> Option<char> {
+        match self {
+            LexemeType::Char(c) => Some(*c),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct Lexeme {
+    string: String,
+    ty: LexemeType,
+}
+
+impl Lexeme {
+    fn new(s: &str) -> Self {
+        Self {
+            string: s.to_string(),
+            ty: LexemeType::new(s),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct TokenStack {
     pub tokens: Vec<Token>,
 }
 
 impl TokenStack {
-    pub fn new_from_tokens(tokens: &[Token]) -> Self {
-        Self {
-            tokens: tokens.to_vec(),
-        }
-    }
+    fn tokenize(lexemes: &[Lexeme]) -> Self {
+        let mut i = 0;
 
-    fn tokenize(lexemes: Lexemes) -> Self {
-        let v = lexemes
-            .words
-            .iter()
-            .map(|word| Token::parse(word))
-            .collect();
+        let mut tokens = Vec::with_capacity(lexemes.len());
 
-        Self { tokens: v }
-    }
-
-    fn resolve_words(&self) -> HashMap<String, TokenStack> {
-        let token_start: Vec<_> = self.tokens.iter().enumerate().filter(|(_, token)| {
-            match_token(token, Builtins::WordStart)
-        }).collect();
-        let token_end: Vec<_> = self.tokens.iter().enumerate().filter(|(_, token)| {
-             match_token(token, Builtins::WordEnd)
-        }).collect();
-
-        let valid_syntax = token_start.len() == token_end.len();
-
-        if !valid_syntax {
-            panic!("Couldn't parse word definitions, not all word starts and ends match.");
-        }
-
-        let mut words = HashMap::new();
-        for ((start, _), (end, _)) in token_start.iter().zip(token_end.iter()) {
-            if let Some((name, definition)) = &self.tokens[start+1..*end].split_first() {
-                if let Token::Word(n) = name {
-                    words.insert(n.clone(), TokenStack::new_from_tokens(definition));
+        while i < lexemes.len() {
+            match &lexemes[i].ty {
+                LexemeType::Number(n) => tokens.push(Token::Data(DataType::Number(vec![*n]))),
+                LexemeType::Char(c) => tokens.push(Token::Data(DataType::Char(vec![*c]))),
+                LexemeType::Word(w) => tokens.push(Token::Word(w.to_string())),
+                LexemeType::Print => tokens.push(Token::Builtin(Builtins::Print)),
+                LexemeType::If => tokens.push(Token::Builtin(Builtins::If)),
+                LexemeType::Forward => tokens.push(Token::Builtin(Builtins::Forward)),
+                LexemeType::Plus => tokens.push(Token::Builtin(Builtins::Plus)),
+                LexemeType::Equal => tokens.push(Token::Builtin(Builtins::Equal)),
+                LexemeType::Minus => tokens.push(Token::Builtin(Builtins::Minus)),
+                LexemeType::Multiply => tokens.push(Token::Builtin(Builtins::Multiply)),
+                LexemeType::Divide => tokens.push(Token::Builtin(Builtins::Divide)),
+                LexemeType::Duplicate => tokens.push(Token::Builtin(Builtins::Duplicate)),
+                LexemeType::Swap => tokens.push(Token::Builtin(Builtins::Swap)),
+                LexemeType::WordStart => tokens.push(Token::Definition(parse_word(&lexemes[i..]))),
+                LexemeType::WordEnd => {},
+                LexemeType::ArrayStart => {
+                    let (next_i, token) = parse_data(&lexemes[i..]).expect("Couldn't parse data");
+                    i += next_i;
+                    tokens.push(token);
                 }
+                LexemeType::ArrayEnd => {}
             }
+
+            i += 1;
         }
 
-        words
+        Self { tokens }
     }
 }
 
-fn match_token(token: &Token, ty: Builtins) -> bool {
-    if let Token::Builtin(b) = token {
-        *b == ty
-    } else {
-        false
+fn parse_datapoint(lexeme: &Lexeme) -> Option<DataType> {
+    use LexemeType::*;
+    match lexeme.ty {
+        Number(n) => Some(DataType::Number(vec![n])),
+        Char(c) => Some(DataType::Char(vec![c])),
+        _ => None,
     }
+}
+
+fn parse_data(lexemes: &[Lexeme]) -> Option<(usize, Token)> {
+    let end = lexemes.iter().position(|x| x.ty == LexemeType::ArrayEnd).expect("Couldn't get array end delimiter.");
+
+    let is_number = lexemes[1..end].iter().all(|x| x.ty.is_number());
+    if is_number {
+        let numbers = lexemes[1..end].iter().map(|x| x.ty.get_primitive_number().expect("Couldn't get numbers.")).collect();       
+        return Some((end, Token::Data(DataType::Number(numbers))));
+    }
+
+    let is_char = lexemes[1..end].iter().all(|x| x.ty.is_char());
+    if is_char {
+        let chars = lexemes[1..end].iter().map(|x| x.ty.get_primitive_char().expect("Couldn't get characters.")).collect();       
+        return Some((end, Token::Data(DataType::Char(chars))));
+    }
+
+    None
+}
+
+fn parse_word(lexemes: &[Lexeme]) -> (String, TokenStack) {
+    let end = lexemes.iter().position(|x| x.ty == LexemeType::WordEnd).expect("Couldn't get word end delimiter");
+
+    if let Some((name, definition)) = &lexemes[1..end].split_first() {
+        if let LexemeType::Word(n) = &name.ty {
+            return (n.clone(), TokenStack::tokenize(definition));
+        }
+    }
+
+    panic!("Couldn't parse word definition.");
+}
+
+fn resolve_words(tokens: &[Token]) -> HashMap<String, TokenStack> {
+    let mut words = HashMap::new();
+    for token in tokens {
+        match token {
+            Token::Definition((name, ast)) => { words.insert(name.to_string(), ast.clone()); },
+            _ => (),
+        }
+    }
+    words
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum DataType {
+    Number(Vec<f64>),
+    Char(Vec<char>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Word(String),
-    Number(f64),
+    Data(DataType),
     Builtin(Builtins),
+    Definition((String, TokenStack)),
 }
 
 impl Token {
@@ -75,13 +208,13 @@ impl Token {
         use Token::*;
 
         if let Ok(w) = word.trim().parse::<f64>() {
-            return Number(w);
+            return Data(DataType::Number(vec![w]));
         }
 
         match word {
             "print" => Builtin(Print),
-            "if" => Builtin(If),
-            "then" => Builtin(Then),
+            "?" => Builtin(If),
+            "->" => Builtin(Forward),
             "+" => Builtin(Plus),
             "=" => Builtin(Equal),
             "-" => Builtin(Minus),
@@ -91,6 +224,8 @@ impl Token {
             "swap" => Builtin(Swap),
             ":" => Builtin(WordStart),
             ";" => Builtin(WordEnd),
+            "[" => Builtin(ArrayStart),
+            "]" => Builtin(ArrayEnd),
             _ => Word(word.to_string()),
         }
     }
@@ -107,24 +242,24 @@ pub enum Builtins {
     Duplicate,
     Swap,
     If,
-    Then,
+    Forward,
     WordStart,
     WordEnd,
+    ArrayStart,
+    ArrayEnd,
 }
 
-fn lex(buf: &str) -> Lexemes {
-    Lexemes {
-        words: buf
-            .split(' ')
-            .filter(|x| *x != "")
-            .map(|x| x.trim().to_string())
-            .collect(),
-    }
+fn lex(buf: &str) -> Vec<Lexeme> {
+    buf
+        .split(' ')
+        .filter(|x| *x != "")
+        .map(|x| Lexeme::new(x.trim()))
+        .collect()
 }
 
 pub fn parse(buf: &str) -> (TokenStack, HashMap<String, TokenStack>) {
     let lexemes = lex(buf);
-    let global_stack = TokenStack::tokenize(lexemes);
-    let words = global_stack.resolve_words();
-    (global_stack, words)
+    let ast = TokenStack::tokenize(&lexemes);
+    let words = resolve_words(&ast.tokens);
+    (ast, words)
 }

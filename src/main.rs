@@ -8,7 +8,7 @@ use eval::eval;
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
 
-    let debugging = false;
+    let debugging = true;
 
     let mut stack = Vec::new();
     let mut words = HashMap::new();
@@ -18,7 +18,8 @@ fn main() -> io::Result<()> {
         io::stdin().read_line(&mut buffer)?;
         io::stdout().flush().unwrap();
 
-        let (tokens, w) = parser::parse(&buffer);
+        let line = buffer.clone();
+        let (tokens, w) = parser::parse(&line);
         words.extend(w);
         eval(&tokens, &mut stack, &words, debugging);
 
