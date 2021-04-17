@@ -23,6 +23,7 @@ enum LexemeType {
     WordEnd,
     ArrayStart,
     ArrayEnd,
+    Comment,
 }
 
 impl LexemeType {
@@ -32,11 +33,19 @@ impl LexemeType {
         }
 
         let mut cs = s.chars();
-        if cs.nth(0) == Some('\'') {
-            return LexemeType::Char(cs.nth(0).expect("Couldn't parse character."));
+        if cs.next() == Some('\'') {
+            match cs.next() {
+                Some('\\') => match cs.next() {
+                        Some('_') => return LexemeType::Char(' '),
+                        _ => panic!("Unknown escape sequence"),
+                    }
+                Some(a) => return LexemeType::Char(a),
+                _ => panic!("Couldn't parse character."),
+            }
         }
 
         match s {
+            "#" => LexemeType::Comment,
             "=>" => LexemeType::Print,
             "?" => LexemeType::If,
             "^" => LexemeType::And,
@@ -120,6 +129,7 @@ impl TokenStack {
                 LexemeType::Char(c) => tokens.push(Token::Data(DataType::Char(vec![*c]))),
                 LexemeType::Word(w) => tokens.push(Token::Word(w.to_string())),
                 LexemeType::Print => tokens.push(Token::Builtin(Builtins::Print)),
+                LexemeType::Comment =>  { i = lexemes.len() },
                 LexemeType::If => tokens.push(Token::Builtin(Builtins::If)),
                 LexemeType::Forward => tokens.push(Token::Builtin(Builtins::Forward)),
                 LexemeType::Plus => tokens.push(Token::Builtin(Builtins::Plus)),
@@ -245,6 +255,34 @@ pub enum Builtins {
     ArrayEnd,
 }
 
+fn sugar(buf: &str) -> String {
+    let mut i = 0;
+
+    let mut cs = buf.chars();
+    let mut res = String::new();
+
+    let mut in_string = false;
+    while i < buf.len() {
+        match cs.next() {
+            Some('"') if in_string => {
+                res.push_str(" ]");
+                in_string = false;
+            }
+            Some('"') if !in_string => {
+                res.push_str(" [");
+                in_string = true;
+            }
+            Some(' ') if in_string => res.push_str(" '\\_"),
+            Some(a) if in_string => res.push_str(&format!(" '{}", a)),
+            Some(a) if !in_string => res.push(a),
+            _ => {}
+        }
+        i += 1;
+    }
+
+    res
+}
+
 fn lex(buf: &str) -> Vec<Lexeme> {
     buf.split(' ')
         .filter(|x| *x != "")
@@ -253,7 +291,8 @@ fn lex(buf: &str) -> Vec<Lexeme> {
 }
 
 pub fn parse(buf: &str) -> (TokenStack, HashMap<String, TokenStack>) {
-    let lexemes = lex(buf);
+    let sugar = sugar(&buf);
+    let lexemes = lex(&sugar);
     let ast = TokenStack::tokenize(&lexemes);
     let words = resolve_words(&ast.tokens);
     (ast, words)
