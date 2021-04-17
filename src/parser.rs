@@ -133,7 +133,11 @@ impl TokenStack {
                 LexemeType::Duplicate => tokens.push(Token::Builtin(Builtins::Duplicate)),
                 LexemeType::Swap => tokens.push(Token::Builtin(Builtins::Swap)),
                 LexemeType::Clear => tokens.push(Token::Builtin(Builtins::Clear)),
-                LexemeType::WordStart => tokens.push(Token::Definition(parse_word(&lexemes[i..]))),
+                LexemeType::WordStart => {
+                    let (next_i, token) = parse_word(&lexemes[i..]);
+                    i += next_i;
+                    tokens.push(Token::Definition(token));
+                }
                 LexemeType::WordEnd => {}
                 LexemeType::ArrayStart => {
                     let (next_i, token) = parse_data(&lexemes[i..]).expect("Couldn't parse data");
@@ -177,7 +181,7 @@ fn parse_data(lexemes: &[Lexeme]) -> Option<(usize, Token)> {
     None
 }
 
-fn parse_word(lexemes: &[Lexeme]) -> (String, TokenStack) {
+fn parse_word(lexemes: &[Lexeme]) -> (usize, (String, TokenStack)) {
     let end = lexemes
         .iter()
         .position(|x| x.ty == LexemeType::WordEnd)
@@ -185,7 +189,7 @@ fn parse_word(lexemes: &[Lexeme]) -> (String, TokenStack) {
 
     if let Some((name, definition)) = &lexemes[1..end].split_first() {
         if let LexemeType::Word(n) = &name.ty {
-            return (n.clone(), TokenStack::tokenize(definition));
+            return (end, (n.clone(), TokenStack::tokenize(definition)));
         }
     }
 
