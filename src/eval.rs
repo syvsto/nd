@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::parser::{Builtins, Token, TokenStack, DataType};
+use crate::parser::{Builtins, DataType, Token, TokenStack};
 
 #[derive(Debug)]
 enum Op {
@@ -13,7 +13,6 @@ enum Op {
 pub enum Val {
     Number(Vec<f64>),
     Char(Vec<char>),
-    Bool(bool),
 }
 
 impl Builtins {
@@ -27,11 +26,19 @@ impl Builtins {
             }
 
             Plus => {
-                let n1 = stack.pop().expect("Couldn't pop first value for addition from stack");
-                let n2 = stack.pop().expect("Couldn't pop second value for addition from stack");
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for addition from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for addition from stack");
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
-                        let n = a.iter().zip(b.iter()).map(|(a,b)| a + b).collect();
+                        let n = b
+                            .iter()
+                            .zip(a.iter().cycle())
+                            .map(|(a, b)| a + b)
+                            .collect();
                         stack.push(Val::Number(n))
                     }
                     _ => panic!("Couldn't add values, not all values were numbers."),
@@ -39,21 +46,25 @@ impl Builtins {
             }
 
             Equal => {
-                let n1 = stack.pop().expect("Couldn't pop first value for comparison from stack");
-                let n2 = stack.pop().expect("Couldn't pop second value for comparison from stack");
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for comparison from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for comparison from stack");
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         if a == b {
-                            stack.push(Val::Bool(true))
+                            stack.push(Val::Number(vec![1.]))
                         } else {
-                            stack.push(Val::Bool(false))
+                            stack.push(Val::Number(vec![0.]))
                         }
                     }
                     (Val::Char(a), Val::Char(b)) => {
                         if a == b {
-                            stack.push(Val::Bool(true))
+                            stack.push(Val::Number(vec![1.]))
                         } else {
-                            stack.push(Val::Bool(false))
+                            stack.push(Val::Number(vec![0.]))
                         }
                     }
                     _ => panic!("Couldn't compare values, not all values were comparable."),
@@ -61,11 +72,15 @@ impl Builtins {
             }
 
             Minus => {
-                let n1 = stack.pop().expect("Couldn't pop first value for subtraction from stack");
-                let n2 = stack.pop().expect("Couldn't pop second value for subtraction from stack");
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for subtraction from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for subtraction from stack");
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
-                        let n = a.iter().zip(b.iter()).map(|(a,b)| a - b).collect();
+                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a - b).collect();
                         stack.push(Val::Number(n))
                     }
                     _ => panic!("Couldn't subtract values, not all values were numbers."),
@@ -73,11 +88,15 @@ impl Builtins {
             }
 
             Multiply => {
-                let n1 = stack.pop().expect("Couldn't pop first value for multiplication from stack");
-                let n2 = stack.pop().expect("Couldn't pop second value for multiplication from stack");
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for multiplication from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for multiplication from stack");
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
-                        let n = a.iter().zip(b.iter()).map(|(a,b)| a * b).collect();
+                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a * b).collect();
                         stack.push(Val::Number(n))
                     }
                     _ => panic!("Couldn't multiply values, not all values were numbers."),
@@ -85,11 +104,15 @@ impl Builtins {
             }
 
             Divide => {
-                let n1 = stack.pop().expect("Couldn't pop first value for division from stack");
-                let n2 = stack.pop().expect("Couldn't pop second value for division from stack");
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for division from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for division from stack");
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
-                        let n = a.iter().zip(b.iter()).map(|(a,b)| a / b).collect();
+                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a / b).collect();
                         stack.push(Val::Number(n))
                     }
                     _ => panic!("Couldn't divide values, not all values were numbers."),
@@ -97,14 +120,37 @@ impl Builtins {
             }
 
             If => {
-                let comparison = stack.pop().expect("Couldn't pop boolean value for comparison from stack");
+                let comparison = stack
+                    .pop()
+                    .expect("Couldn't pop boolean value for comparison from stack");
                 match comparison {
-                    Val::Bool(cmp) => {
-                        if !cmp {
+                    Val::Number(cmp) => {
+                        if cmp.iter().all(|x| *x == 0.) {
                             return Some(Op::ContinueToForward);
                         }
                     }
                     _ => panic!("Wrong type in comparison or index."),
+                }
+            }
+
+            Concat => {
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for concatenation from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for concatenation from stack");
+
+                match (n1, n2) {
+                    (Val::Number(mut a), Val::Number(b)) => {
+                        a.extend(b);
+                        stack.push(Val::Number(a));
+                    }
+                    (Val::Char(mut a), Val::Char(b)) => {
+                        a.extend(b);
+                        stack.push(Val::Char(a));
+                    }
+                    _ => panic!("Wrong type combination or missing values in concatenation."),
                 }
             }
 
@@ -117,14 +163,18 @@ impl Builtins {
             }
 
             Duplicate => {
-                let n = stack.pop().expect("Couldn't duplicate element, nothing on stack");
+                let n = stack
+                    .pop()
+                    .expect("Couldn't duplicate element, nothing on stack");
                 stack.push(n.clone());
                 stack.push(n);
             }
 
             Swap => {
                 let n1 = stack.pop().expect("Couldn't pop first value for swapping.");
-                let n2 = stack.pop().expect("Couldn't pop second value for swapping.");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for swapping.");
 
                 stack.push(n1);
                 stack.push(n2);
@@ -149,11 +199,7 @@ fn next_of_type(ty: Builtins, tokens: &[Token]) -> Option<usize> {
     })
 }
 
-fn eval_op(
-    op: &Op,
-    current_index: usize,
-    ast: &TokenStack,
-) -> usize {
+fn eval_op(op: &Op, current_index: usize, ast: &TokenStack) -> usize {
     use Op::*;
 
     match op {
@@ -194,12 +240,10 @@ pub fn eval(
                     eval(word, stack, words, debug);
                 }
             }
-            Data(data) => {
-                match data {
-                    DataType::Number(n) => stack.push(Val::Number(n.to_vec())),
-                    DataType::Char(c) => stack.push(Val::Char(c.to_vec())),
-                }
-            }
+            Data(data) => match data {
+                DataType::Number(n) => stack.push(Val::Number(n.to_vec())),
+                DataType::Char(c) => stack.push(Val::Char(c.to_vec())),
+            },
             Builtin(func) => {
                 if let Some(ref op) = func.eval(stack) {
                     i = eval_op(op, i, &ast);

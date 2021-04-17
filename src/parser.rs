@@ -13,6 +13,7 @@ enum LexemeType {
     Minus,
     Multiply,
     Divide,
+    Concat,
     Duplicate,
     Swap,
     Clear,
@@ -34,7 +35,7 @@ impl LexemeType {
         }
 
         match s {
-            ">>" => LexemeType::Print,
+            "=>" => LexemeType::Print,
             "?" => LexemeType::If,
             "->" => LexemeType::Forward,
             "+" => LexemeType::Plus,
@@ -42,6 +43,7 @@ impl LexemeType {
             "-" => LexemeType::Minus,
             "*" => LexemeType::Multiply,
             "/" => LexemeType::Divide,
+            "," => LexemeType::Concat,
             "<>" => LexemeType::Duplicate,
             "><" => LexemeType::Swap,
             "_" => LexemeType::Clear,
@@ -121,11 +123,12 @@ impl TokenStack {
                 LexemeType::Minus => tokens.push(Token::Builtin(Builtins::Minus)),
                 LexemeType::Multiply => tokens.push(Token::Builtin(Builtins::Multiply)),
                 LexemeType::Divide => tokens.push(Token::Builtin(Builtins::Divide)),
+                LexemeType::Concat => tokens.push(Token::Builtin(Builtins::Concat)),
                 LexemeType::Duplicate => tokens.push(Token::Builtin(Builtins::Duplicate)),
                 LexemeType::Swap => tokens.push(Token::Builtin(Builtins::Swap)),
                 LexemeType::Clear => tokens.push(Token::Builtin(Builtins::Clear)),
                 LexemeType::WordStart => tokens.push(Token::Definition(parse_word(&lexemes[i..]))),
-                LexemeType::WordEnd => {},
+                LexemeType::WordEnd => {}
                 LexemeType::ArrayStart => {
                     let (next_i, token) = parse_data(&lexemes[i..]).expect("Couldn't parse data");
                     i += next_i;
@@ -142,17 +145,26 @@ impl TokenStack {
 }
 
 fn parse_data(lexemes: &[Lexeme]) -> Option<(usize, Token)> {
-    let end = lexemes.iter().position(|x| x.ty == LexemeType::ArrayEnd).expect("Couldn't get array end delimiter.");
+    let end = lexemes
+        .iter()
+        .position(|x| x.ty == LexemeType::ArrayEnd)
+        .expect("Couldn't get array end delimiter.");
 
     let is_number = lexemes[1..end].iter().all(|x| x.ty.is_number());
     if is_number {
-        let numbers = lexemes[1..end].iter().map(|x| x.ty.get_primitive_number().expect("Couldn't get numbers.")).collect();       
+        let numbers = lexemes[1..end]
+            .iter()
+            .map(|x| x.ty.get_primitive_number().expect("Couldn't get numbers."))
+            .collect();
         return Some((end, Token::Data(DataType::Number(numbers))));
     }
 
     let is_char = lexemes[1..end].iter().all(|x| x.ty.is_char());
     if is_char {
-        let chars = lexemes[1..end].iter().map(|x| x.ty.get_primitive_char().expect("Couldn't get characters.")).collect();       
+        let chars = lexemes[1..end]
+            .iter()
+            .map(|x| x.ty.get_primitive_char().expect("Couldn't get characters."))
+            .collect();
         return Some((end, Token::Data(DataType::Char(chars))));
     }
 
@@ -160,7 +172,10 @@ fn parse_data(lexemes: &[Lexeme]) -> Option<(usize, Token)> {
 }
 
 fn parse_word(lexemes: &[Lexeme]) -> (String, TokenStack) {
-    let end = lexemes.iter().position(|x| x.ty == LexemeType::WordEnd).expect("Couldn't get word end delimiter");
+    let end = lexemes
+        .iter()
+        .position(|x| x.ty == LexemeType::WordEnd)
+        .expect("Couldn't get word end delimiter");
 
     if let Some((name, definition)) = &lexemes[1..end].split_first() {
         if let LexemeType::Word(n) = &name.ty {
@@ -175,7 +190,9 @@ fn resolve_words(tokens: &[Token]) -> HashMap<String, TokenStack> {
     let mut words = HashMap::new();
     for token in tokens {
         match token {
-            Token::Definition((name, ast)) => { words.insert(name.to_string(), ast.clone()); },
+            Token::Definition((name, ast)) => {
+                words.insert(name.to_string(), ast.clone());
+            }
             _ => (),
         }
     }
@@ -204,6 +221,7 @@ pub enum Builtins {
     Minus,
     Multiply,
     Divide,
+    Concat,
     Duplicate,
     Swap,
     Clear,
@@ -216,8 +234,7 @@ pub enum Builtins {
 }
 
 fn lex(buf: &str) -> Vec<Lexeme> {
-    buf
-        .split(' ')
+    buf.split(' ')
         .filter(|x| *x != "")
         .map(|x| Lexeme::new(x.trim()))
         .collect()
