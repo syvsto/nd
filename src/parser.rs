@@ -34,7 +34,7 @@ impl LexemeType {
         }
 
         match s {
-            "print" => LexemeType::Print,
+            ">>" => LexemeType::Print,
             "?" => LexemeType::If,
             "->" => LexemeType::Forward,
             "+" => LexemeType::Plus,
@@ -42,7 +42,7 @@ impl LexemeType {
             "-" => LexemeType::Minus,
             "*" => LexemeType::Multiply,
             "/" => LexemeType::Divide,
-            "nn" => LexemeType::Duplicate,
+            "<>" => LexemeType::Duplicate,
             "><" => LexemeType::Swap,
             "_" => LexemeType::Clear,
             ":" => LexemeType::WordStart,
