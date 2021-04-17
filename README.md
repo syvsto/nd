@@ -20,6 +20,8 @@ Built-in Words
  * `^` Logical _and_ between top two stack elements. If each element has multiple values, perform element-wise _and_.
  * `v` Logical _or_ between top two stack elements. If each element has multiple values, perform element-wise _or.
 
+All boolean operators repeat the top stack element, so `[ 1 0 1 ] 1 v` evaluates to `[ 1 1 1 ]`.
+
 ### Equality
 
  * `=` Test value-wise equality between top two stack elements.
@@ -30,6 +32,8 @@ Built-in Words
  * `-` Value-wise subtraction between top two stack elements.
  * `*` Value-wise multiplication between top two stack elements.
  * `/` Value-wise division between top two stack elements.
+
+All boolean operators repeat the top stack element, so `[ 1 2 3 ] 1 +` evaluates to `[ 2 3 4 ]`.
 
 ### In-element manipulation
 
