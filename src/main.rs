@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
+use std::env;
+use std::fs;
 
 mod eval;
 mod parser;
-use eval::eval;
+use eval::{eval, Val};
+use parser::TokenStack;
 
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
@@ -13,21 +16,32 @@ fn main() -> io::Result<()> {
     let mut stack = Vec::new();
     let mut words = HashMap::new();
 
-    loop {
-        buffer.clear();
-        io::stdin().read_line(&mut buffer)?;
-        io::stdout().flush().unwrap();
+    let mut args = env::args();
+    if let Some(f) = args.nth(1) {
+        buffer = fs::read_to_string(f).expect("Invalid file name.");
+        for line in buffer.lines() {
+            repl(&line, &mut stack, &mut words, debugging);
+        }
+    } else {
+        loop {
+            buffer.clear();
+            io::stdin().read_line(&mut buffer)?;
+            io::stdout().flush().unwrap();
 
-        let line = buffer.clone();
-        let (tokens, w) = parser::parse(&line);
-        words.extend(w);
-        eval(&tokens, &mut stack, &words, debugging);
+            repl(&buffer, &mut stack, &mut words, debugging);
 
-        io::stdout().flush().unwrap();
+            io::stdout().flush().unwrap();
 
-        if buffer.trim() == "quit" {
-            break;
+            if buffer.trim() == "quit" {
+                break;
+            }
         }
     }
     Ok(())
+}
+
+fn repl(buffer: &str, stack: &mut Vec<Val>, words: &mut HashMap<String, TokenStack>, debugging: bool) {
+    let (tokens, w) = parser::parse(buffer);
+    words.extend(w);
+    eval(&tokens, stack, words, debugging);
 }
