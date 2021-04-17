@@ -133,6 +133,37 @@ impl Builtins {
                 }
             }
 
+            And => {
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for logical and from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for logical and from stack");
+                match (n1, n2) {
+                    (Val::Number(a), Val::Number(b)) => {
+                        stack.push(Val::Number(b.iter().zip(a.iter().cycle()).map(|(a,b)| if *a == 1. && *b == 1. { 1. } else { 0. }).collect()));
+                    }
+                    _ => panic!("Both stack elements were not present, or were not numbers."),
+                }
+            }
+
+            Or => {
+                let n1 = stack
+                    .pop()
+                    .expect("Couldn't pop first value for logical or from stack");
+                let n2 = stack
+                    .pop()
+                    .expect("Couldn't pop second value for logical or from stack");
+                match (n1, n2) {
+                    (Val::Number(a), Val::Number(b)) => {
+                        stack.push(Val::Number(b.iter().zip(a.iter().cycle()).map(|(a,b)| if *a == 1. || *b == 1. { 1. } else { 0. }).collect()));
+                    }
+                    _ => panic!("Both stack elements were not present, or were not numbers."),
+                }
+            }
+
+
             Concat => {
                 let n1 = stack
                     .pop()
