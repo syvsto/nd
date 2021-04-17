@@ -8,7 +8,7 @@ use eval::eval;
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
 
-    let debugging = true;
+    let debugging = false;
 
     let mut stack = Vec::new();
     let mut words = HashMap::new();

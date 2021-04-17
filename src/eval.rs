@@ -49,7 +49,14 @@ impl Builtins {
                             stack.push(Val::Bool(false))
                         }
                     }
-                    _ => panic!("Couldn't compare values, not all values were numbers."),
+                    (Val::Char(a), Val::Char(b)) => {
+                        if a == b {
+                            stack.push(Val::Bool(true))
+                        } else {
+                            stack.push(Val::Bool(false))
+                        }
+                    }
+                    _ => panic!("Couldn't compare values, not all values were comparable."),
                 }
             }
 
@@ -121,6 +128,10 @@ impl Builtins {
 
                 stack.push(n1);
                 stack.push(n2);
+            }
+
+            Clear => {
+                stack.clear();
             }
 
             Forward => {}

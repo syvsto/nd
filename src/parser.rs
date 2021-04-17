@@ -15,6 +15,7 @@ enum LexemeType {
     Divide,
     Duplicate,
     Swap,
+    Clear,
     WordStart,
     WordEnd,
     ArrayStart,
@@ -29,7 +30,7 @@ impl LexemeType {
 
         let mut cs = s.chars();
         if cs.nth(0) == Some('\'') {
-            return LexemeType::Char(cs.nth(1).expect("Couldn't parse character."));
+            return LexemeType::Char(cs.nth(0).expect("Couldn't parse character."));
         }
 
         match s {
@@ -41,8 +42,9 @@ impl LexemeType {
             "-" => LexemeType::Minus,
             "*" => LexemeType::Multiply,
             "/" => LexemeType::Divide,
-            "dup" => LexemeType::Duplicate,
-            "swap" => LexemeType::Swap,
+            "nn" => LexemeType::Duplicate,
+            "><" => LexemeType::Swap,
+            "_" => LexemeType::Clear,
             ":" => LexemeType::WordStart,
             ";" => LexemeType::WordEnd,
             "[" => LexemeType::ArrayStart,
@@ -121,6 +123,7 @@ impl TokenStack {
                 LexemeType::Divide => tokens.push(Token::Builtin(Builtins::Divide)),
                 LexemeType::Duplicate => tokens.push(Token::Builtin(Builtins::Duplicate)),
                 LexemeType::Swap => tokens.push(Token::Builtin(Builtins::Swap)),
+                LexemeType::Clear => tokens.push(Token::Builtin(Builtins::Clear)),
                 LexemeType::WordStart => tokens.push(Token::Definition(parse_word(&lexemes[i..]))),
                 LexemeType::WordEnd => {},
                 LexemeType::ArrayStart => {
@@ -135,15 +138,6 @@ impl TokenStack {
         }
 
         Self { tokens }
-    }
-}
-
-fn parse_datapoint(lexeme: &Lexeme) -> Option<DataType> {
-    use LexemeType::*;
-    match lexeme.ty {
-        Number(n) => Some(DataType::Number(vec![n])),
-        Char(c) => Some(DataType::Char(vec![c])),
-        _ => None,
     }
 }
 
@@ -202,35 +196,6 @@ pub enum Token {
     Definition((String, TokenStack)),
 }
 
-impl Token {
-    fn parse(word: &str) -> Self {
-        use Builtins::*;
-        use Token::*;
-
-        if let Ok(w) = word.trim().parse::<f64>() {
-            return Data(DataType::Number(vec![w]));
-        }
-
-        match word {
-            "print" => Builtin(Print),
-            "?" => Builtin(If),
-            "->" => Builtin(Forward),
-            "+" => Builtin(Plus),
-            "=" => Builtin(Equal),
-            "-" => Builtin(Minus),
-            "*" => Builtin(Multiply),
-            "/" => Builtin(Divide),
-            "dup" => Builtin(Duplicate),
-            "swap" => Builtin(Swap),
-            ":" => Builtin(WordStart),
-            ";" => Builtin(WordEnd),
-            "[" => Builtin(ArrayStart),
-            "]" => Builtin(ArrayEnd),
-            _ => Word(word.to_string()),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Builtins {
     Print,
@@ -241,6 +206,7 @@ pub enum Builtins {
     Divide,
     Duplicate,
     Swap,
+    Clear,
     If,
     Forward,
     WordStart,
