@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use std::io::{self, Write};
 use std::env;
 use std::fs;
+use std::io::{self, Write};
 
+mod errors;
 mod eval;
 mod parser;
 use eval::{eval, Val};
@@ -40,8 +41,17 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn repl(buffer: &str, stack: &mut Vec<Val>, words: &mut HashMap<String, TokenStack>, debugging: bool) {
-    let (tokens, w) = parser::parse(buffer);
-    words.extend(w);
-    eval(&tokens, stack, words, debugging);
+fn repl(
+    buffer: &str,
+    stack: &mut Vec<Val>,
+    words: &mut HashMap<String, TokenStack>,
+    debugging: bool,
+) {
+    match parser::parse(buffer) {
+        Ok((tokens, w)) => {
+            words.extend(w);
+            eval(&tokens, stack, words, debugging);
+        }
+        Err(err) => println!("Couldn't parse line: {:?}", err),
+    }
 }

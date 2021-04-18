@@ -24,25 +24,17 @@ impl Builtins {
                 if let Some((last, _)) = stack.split_last() {
                     match last {
                         Val::Number(n) => println!("{:?}", n),
-                        Val::Char(c) => println!("{}", String::from_iter(c))
+                        Val::Char(c) => println!("{}", String::from_iter(c)),
                     }
                 }
             }
 
             Plus => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for addition from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for addition from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
-                        let n = b
-                            .iter()
-                            .zip(a.iter().cycle())
-                            .map(|(a, b)| a + b)
-                            .collect();
+                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a + b).collect();
                         stack.push(Val::Number(n))
                     }
                     _ => panic!("Couldn't add values, not all values were numbers."),
@@ -50,12 +42,8 @@ impl Builtins {
             }
 
             Equal => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for comparison from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for comparison from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         if a == b {
@@ -76,12 +64,8 @@ impl Builtins {
             }
 
             Minus => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for subtraction from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for subtraction from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a - b).collect();
@@ -92,12 +76,8 @@ impl Builtins {
             }
 
             Multiply => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for multiplication from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for multiplication from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a * b).collect();
@@ -108,12 +88,8 @@ impl Builtins {
             }
 
             Divide => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for division from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for division from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a / b).collect();
@@ -124,9 +100,7 @@ impl Builtins {
             }
 
             If => {
-                let comparison = stack
-                    .pop()
-                    .expect("Couldn't pop boolean value for comparison from stack");
+                let comparison = stack.pop()?;
                 match comparison {
                     Val::Number(cmp) => {
                         if cmp.iter().all(|x| *x == 0.) {
@@ -138,43 +112,40 @@ impl Builtins {
             }
 
             And => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for logical and from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for logical and from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
-                        stack.push(Val::Number(b.iter().zip(a.iter().cycle()).map(|(a,b)| if *a == 1. && *b == 1. { 1. } else { 0. }).collect()));
+                        stack.push(Val::Number(
+                            b.iter()
+                                .zip(a.iter().cycle())
+                                .map(|(a, b)| if *a == 1. && *b == 1. { 1. } else { 0. })
+                                .collect(),
+                        ));
                     }
                     _ => panic!("Both stack elements were not present, or were not numbers."),
                 }
             }
 
             Or => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for logical or from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for logical or from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
-                        stack.push(Val::Number(b.iter().zip(a.iter().cycle()).map(|(a,b)| if *a == 1. || *b == 1. { 1. } else { 0. }).collect()));
+                        stack.push(Val::Number(
+                            b.iter()
+                                .zip(a.iter().cycle())
+                                .map(|(a, b)| if *a == 1. || *b == 1. { 1. } else { 0. })
+                                .collect(),
+                        ));
                     }
                     _ => panic!("Both stack elements were not present, or were not numbers."),
                 }
             }
 
-
             Concat => {
-                let n1 = stack
-                    .pop()
-                    .expect("Couldn't pop first value for concatenation from stack");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for concatenation from stack");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
 
                 match (n1, n2) {
                     (Val::Number(mut a), Val::Number(b)) => {
@@ -198,18 +169,14 @@ impl Builtins {
             }
 
             Duplicate => {
-                let n = stack
-                    .pop()
-                    .expect("Couldn't duplicate element, nothing on stack");
+                let n = stack.pop()?;
                 stack.push(n.clone());
                 stack.push(n);
             }
 
             Swap => {
-                let n1 = stack.pop().expect("Couldn't pop first value for swapping.");
-                let n2 = stack
-                    .pop()
-                    .expect("Couldn't pop second value for swapping.");
+                let n1 = stack.pop()?;
+                let n2 = stack.pop()?;
 
                 stack.push(n1);
                 stack.push(n2);
@@ -228,7 +195,7 @@ impl Builtins {
             }
 
             Pop => {
-                stack.pop().expect("Couldn't split at last element");
+                stack.pop()?;
             }
 
             Forward => {}

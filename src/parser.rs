@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::errors::ErrorType;
+
 #[derive(Debug, Clone, PartialEq)]
 enum LexemeType {
     Number(f64),
@@ -38,9 +40,9 @@ impl LexemeType {
         if cs.next() == Some('\'') {
             match cs.next() {
                 Some('\\') => match cs.next() {
-                        Some('_') => return LexemeType::Char(' '),
-                        _ => panic!("Unknown escape sequence"),
-                    }
+                    Some('_') => return LexemeType::Char(' '),
+                    _ => panic!("Unknown escape sequence"),
+                },
                 Some(a) => return LexemeType::Char(a),
                 _ => panic!("Couldn't parse character."),
             }
@@ -122,7 +124,7 @@ pub struct TokenStack {
 }
 
 impl TokenStack {
-    fn tokenize(lexemes: &[Lexeme]) -> Self {
+    fn tokenize(lexemes: &[Lexeme]) -> Result<Self, ErrorType> {
         let mut i = 0;
 
         let mut tokens = Vec::with_capacity(lexemes.len());
@@ -133,7 +135,7 @@ impl TokenStack {
                 LexemeType::Char(c) => tokens.push(Token::Data(DataType::Char(vec![*c]))),
                 LexemeType::Word(w) => tokens.push(Token::Word(w.to_string())),
                 LexemeType::Print => tokens.push(Token::Builtin(Builtins::Print)),
-                LexemeType::Comment =>  { i = lexemes.len() },
+                LexemeType::Comment => i = lexemes.len(),
                 LexemeType::If => tokens.push(Token::Builtin(Builtins::If)),
                 LexemeType::Forward => tokens.push(Token::Builtin(Builtins::Forward)),
                 LexemeType::Plus => tokens.push(Token::Builtin(Builtins::Plus)),
@@ -150,13 +152,13 @@ impl TokenStack {
                 LexemeType::ClearButOne => tokens.push(Token::Builtin(Builtins::ClearButOne)),
                 LexemeType::Pop => tokens.push(Token::Builtin(Builtins::Pop)),
                 LexemeType::WordStart => {
-                    let (next_i, token) = parse_word(&lexemes[i..]);
+                    let (next_i, token) = parse_word(&lexemes[i..])?;
                     i += next_i;
                     tokens.push(Token::Definition(token));
                 }
                 LexemeType::WordEnd => {}
                 LexemeType::ArrayStart => {
-                    let (next_i, token) = parse_data(&lexemes[i..]).expect("Couldn't parse data");
+                    let (next_i, token) = parse_data(&lexemes[i..])?;
                     i += next_i;
                     tokens.push(token);
                 }
@@ -166,50 +168,52 @@ impl TokenStack {
             i += 1;
         }
 
-        Self { tokens }
+        Ok(Self { tokens })
     }
 }
 
-fn parse_data(lexemes: &[Lexeme]) -> Option<(usize, Token)> {
+fn parse_data(lexemes: &[Lexeme]) -> Result<(usize, Token), ErrorType> {
     let end = lexemes
         .iter()
         .position(|x| x.ty == LexemeType::ArrayEnd)
-        .expect("Couldn't get array end delimiter.");
+        .ok_or(ErrorType::Parse)?;
 
     let is_number = lexemes[1..end].iter().all(|x| x.ty.is_number());
     if is_number {
-        let numbers = lexemes[1..end]
+        let numbers: Result<Vec<_>, _> = lexemes[1..end]
             .iter()
-            .map(|x| x.ty.get_primitive_number().expect("Couldn't get numbers."))
+            .map(|x| x.ty.get_primitive_number().ok_or(ErrorType::Parse))
+            .into_iter()
             .collect();
-        return Some((end, Token::Data(DataType::Number(numbers))));
+        return Ok((end, Token::Data(DataType::Number(numbers?))));
     }
 
     let is_char = lexemes[1..end].iter().all(|x| x.ty.is_char());
     if is_char {
-        let chars = lexemes[1..end]
+        let chars: Result<Vec<_>, _> = lexemes[1..end]
             .iter()
-            .map(|x| x.ty.get_primitive_char().expect("Couldn't get characters."))
+            .map(|x| x.ty.get_primitive_char().ok_or(ErrorType::Parse))
+            .into_iter()
             .collect();
-        return Some((end, Token::Data(DataType::Char(chars))));
+        return Ok((end, Token::Data(DataType::Char(chars?))));
     }
 
-    None
+    Err(ErrorType::Parse)
 }
 
-fn parse_word(lexemes: &[Lexeme]) -> (usize, (String, TokenStack)) {
+fn parse_word(lexemes: &[Lexeme]) -> Result<(usize, (String, TokenStack)), ErrorType> {
     let end = lexemes
         .iter()
         .position(|x| x.ty == LexemeType::WordEnd)
-        .expect("Couldn't get word end delimiter");
+        .ok_or(ErrorType::Parse)?;
 
     if let Some((name, definition)) = &lexemes[1..end].split_first() {
         if let LexemeType::Word(n) = &name.ty {
-            return (end, (n.clone(), TokenStack::tokenize(definition)));
+            return Ok((end, (n.clone(), TokenStack::tokenize(definition)?)));
         }
     }
 
-    panic!("Couldn't parse word definition.");
+    Err(ErrorType::Parse)
 }
 
 fn resolve_words(tokens: &[Token]) -> HashMap<String, TokenStack> {
@@ -298,10 +302,10 @@ fn lex(buf: &str) -> Vec<Lexeme> {
         .collect()
 }
 
-pub fn parse(buf: &str) -> (TokenStack, HashMap<String, TokenStack>) {
+pub fn parse(buf: &str) -> Result<(TokenStack, HashMap<String, TokenStack>), ErrorType> {
     let sugar = sugar(&buf);
     let lexemes = lex(&sugar);
-    let ast = TokenStack::tokenize(&lexemes);
+    let ast = TokenStack::tokenize(&lexemes)?;
     let words = resolve_words(&ast.tokens);
-    (ast, words)
+    Ok((ast, words))
 }
