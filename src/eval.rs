@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use crate::parser::{Builtins, DataType, Token, TokenStack};
 use crate::errors::ErrorType;
+use crate::parser::{Ast, Builtins, DataType, Token};
 
 #[derive(Debug)]
 enum Op {
@@ -173,13 +173,9 @@ impl Builtins {
                 }
             }
 
-            WordStart => {
-                Ok(Some(Op::ContinueToDefinitionEnd))
-            }
+            WordStart => Ok(Some(Op::ContinueToDefinitionEnd)),
 
-            ArrayStart => {
-                Ok(Some(Op::ContinueToArrayEnd))
-            }
+            ArrayStart => Ok(Some(Op::ContinueToArrayEnd)),
 
             Duplicate => {
                 let n = stack.pop().ok_or(ErrorType::Eval)?;
@@ -216,9 +212,9 @@ impl Builtins {
                 Ok(None)
             }
 
-            Forward => {Ok(None)}
-            WordEnd => {Ok(None)}
-            ArrayEnd => {Ok(None)}
+            Forward => Ok(None),
+            WordEnd => Ok(None),
+            ArrayEnd => Ok(None),
         }
     }
 }
@@ -230,7 +226,7 @@ fn next_of_type(ty: Builtins, tokens: &[Token]) -> Option<usize> {
     })
 }
 
-fn eval_op(op: &Op, current_index: usize, ast: &TokenStack) -> usize {
+fn eval_op(op: &Op, current_index: usize, ast: &Ast) -> usize {
     use Op::*;
 
     match op {
@@ -255,9 +251,9 @@ fn eval_op(op: &Op, current_index: usize, ast: &TokenStack) -> usize {
 }
 
 pub fn eval(
-    ast: &TokenStack,
+    ast: &Ast,
     stack: &mut Vec<Val>,
-    words: &HashMap<String, TokenStack>,
+    words: &HashMap<String, Ast>,
     debug: bool,
 ) -> Result<(), ErrorType> {
     use Token::*;

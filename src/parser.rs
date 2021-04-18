@@ -1,12 +1,14 @@
 use std::collections::HashMap;
+use std::error::Error;
 
 use crate::errors::ErrorType;
 
 #[derive(Debug, Clone, PartialEq)]
 enum LexemeType {
-    Number(f64),
-    Char(char),
-    Word(String),
+    Number,
+    Str,
+    Array,
+    Word,
     Print,
     If,
     And,
@@ -23,86 +25,7 @@ enum LexemeType {
     Clear,
     ClearButOne,
     Pop,
-    WordStart,
-    WordEnd,
-    ArrayStart,
-    ArrayEnd,
-    Comment,
-}
-
-impl LexemeType {
-    fn new(s: &str) -> Result<LexemeType, ErrorType> {
-        if let Ok(w) = s.trim().parse::<f64>() {
-            return Ok(LexemeType::Number(w));
-        }
-
-        let mut cs = s.chars();
-        if cs.next() == Some('\'') {
-            match cs.next() {
-                Some('\\') => match cs.next() {
-                    Some('_') => return Ok(LexemeType::Char(' ')),
-                    _ => return Err(ErrorType::Parse),
-                },
-                Some(a) => return Ok(LexemeType::Char(a)),
-                _ => return Err(ErrorType::Parse),
-            }
-        }
-
-        let s = match s {
-            "#" => LexemeType::Comment,
-            "=>" => LexemeType::Print,
-            "?" => LexemeType::If,
-            "^" => LexemeType::And,
-            "v" => LexemeType::Or,
-            "->" => LexemeType::Forward,
-            "+" => LexemeType::Plus,
-            "=" => LexemeType::Equal,
-            "-" => LexemeType::Minus,
-            "*" => LexemeType::Multiply,
-            "/" => LexemeType::Divide,
-            "," => LexemeType::Concat,
-            "<>" => LexemeType::Duplicate,
-            "><" => LexemeType::Swap,
-            "<<" => LexemeType::Pop,
-            "_" => LexemeType::Clear,
-            "_1" => LexemeType::ClearButOne,
-            ":" => LexemeType::WordStart,
-            ";" => LexemeType::WordEnd,
-            "[" => LexemeType::ArrayStart,
-            "]" => LexemeType::ArrayEnd,
-            _ => LexemeType::Word(s.to_string()),
-        };
-
-        Ok(s)
-    }
-
-    fn is_number(&self) -> bool {
-        match self {
-            LexemeType::Number(_) => true,
-            _ => false,
-        }
-    }
-
-    fn get_primitive_number(&self) -> Option<f64> {
-        match self {
-            LexemeType::Number(n) => Some(*n),
-            _ => None,
-        }
-    }
-
-    fn is_char(&self) -> bool {
-        match self {
-            LexemeType::Char(_) => true,
-            _ => false,
-        }
-    }
-
-    fn get_primitive_char(&self) -> Option<char> {
-        match self {
-            LexemeType::Char(c) => Some(*c),
-            _ => None,
-        }
-    }
+    Definition,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -111,114 +34,20 @@ struct Lexeme {
     ty: LexemeType,
 }
 
-impl Lexeme {
-    fn new(s: &str) -> Result<Self, ErrorType> {
-        Ok(Self {
-            string: s.to_string(),
-            ty: LexemeType::new(s)?,
-        })
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
-pub struct TokenStack {
+pub struct Ast {
     pub tokens: Vec<Token>,
 }
 
-impl TokenStack {
-    fn tokenize(lexemes: &[Lexeme]) -> Result<Self, ErrorType> {
-        let mut i = 0;
+impl Ast {
+    fn parse(lexemes: &[Lexeme]) -> Result<Self, Box<dyn Error>> {
+        let tokens: Result<Vec<_>, _> = lexemes.iter().map(|l| Token::parse(l)).collect();
 
-        let mut tokens = Vec::with_capacity(lexemes.len());
-
-        while i < lexemes.len() {
-            match &lexemes[i].ty {
-                LexemeType::Number(n) => tokens.push(Token::Data(DataType::Number(vec![*n]))),
-                LexemeType::Char(c) => tokens.push(Token::Data(DataType::Char(vec![*c]))),
-                LexemeType::Word(w) => tokens.push(Token::Word(w.to_string())),
-                LexemeType::Print => tokens.push(Token::Builtin(Builtins::Print)),
-                LexemeType::Comment => i = lexemes.len(),
-                LexemeType::If => tokens.push(Token::Builtin(Builtins::If)),
-                LexemeType::Forward => tokens.push(Token::Builtin(Builtins::Forward)),
-                LexemeType::Plus => tokens.push(Token::Builtin(Builtins::Plus)),
-                LexemeType::Equal => tokens.push(Token::Builtin(Builtins::Equal)),
-                LexemeType::And => tokens.push(Token::Builtin(Builtins::And)),
-                LexemeType::Or => tokens.push(Token::Builtin(Builtins::Or)),
-                LexemeType::Minus => tokens.push(Token::Builtin(Builtins::Minus)),
-                LexemeType::Multiply => tokens.push(Token::Builtin(Builtins::Multiply)),
-                LexemeType::Divide => tokens.push(Token::Builtin(Builtins::Divide)),
-                LexemeType::Concat => tokens.push(Token::Builtin(Builtins::Concat)),
-                LexemeType::Duplicate => tokens.push(Token::Builtin(Builtins::Duplicate)),
-                LexemeType::Swap => tokens.push(Token::Builtin(Builtins::Swap)),
-                LexemeType::Clear => tokens.push(Token::Builtin(Builtins::Clear)),
-                LexemeType::ClearButOne => tokens.push(Token::Builtin(Builtins::ClearButOne)),
-                LexemeType::Pop => tokens.push(Token::Builtin(Builtins::Pop)),
-                LexemeType::WordStart => {
-                    let (next_i, token) = parse_word(&lexemes[i..])?;
-                    i += next_i;
-                    tokens.push(Token::Definition(token));
-                }
-                LexemeType::WordEnd => {}
-                LexemeType::ArrayStart => {
-                    let (next_i, token) = parse_data(&lexemes[i..])?;
-                    i += next_i;
-                    tokens.push(token);
-                }
-                LexemeType::ArrayEnd => {}
-            }
-
-            i += 1;
-        }
-
-        Ok(Self { tokens })
+        Ok(Self { tokens: tokens? })
     }
 }
 
-fn parse_data(lexemes: &[Lexeme]) -> Result<(usize, Token), ErrorType> {
-    let end = lexemes
-        .iter()
-        .position(|x| x.ty == LexemeType::ArrayEnd)
-        .ok_or(ErrorType::Parse)?;
-
-    let is_number = lexemes[1..end].iter().all(|x| x.ty.is_number());
-    if is_number {
-        let numbers: Result<Vec<_>, _> = lexemes[1..end]
-            .iter()
-            .map(|x| x.ty.get_primitive_number().ok_or(ErrorType::Parse))
-            .into_iter()
-            .collect();
-        return Ok((end, Token::Data(DataType::Number(numbers?))));
-    }
-
-    let is_char = lexemes[1..end].iter().all(|x| x.ty.is_char());
-    if is_char {
-        let chars: Result<Vec<_>, _> = lexemes[1..end]
-            .iter()
-            .map(|x| x.ty.get_primitive_char().ok_or(ErrorType::Parse))
-            .into_iter()
-            .collect();
-        return Ok((end, Token::Data(DataType::Char(chars?))));
-    }
-
-    Err(ErrorType::Parse)
-}
-
-fn parse_word(lexemes: &[Lexeme]) -> Result<(usize, (String, TokenStack)), ErrorType> {
-    let end = lexemes
-        .iter()
-        .position(|x| x.ty == LexemeType::WordEnd)
-        .ok_or(ErrorType::Parse)?;
-
-    if let Some((name, definition)) = &lexemes[1..end].split_first() {
-        if let LexemeType::Word(n) = &name.ty {
-            return Ok((end, (n.clone(), TokenStack::tokenize(definition)?)));
-        }
-    }
-
-    Err(ErrorType::Parse)
-}
-
-fn resolve_words(tokens: &[Token]) -> HashMap<String, TokenStack> {
+fn resolve_words(tokens: &[Token]) -> HashMap<String, Ast> {
     let mut words = HashMap::new();
     for token in tokens {
         match token {
@@ -242,7 +71,54 @@ pub enum Token {
     Word(String),
     Data(DataType),
     Builtin(Builtins),
-    Definition((String, TokenStack)),
+    Definition((String, Ast)),
+}
+
+impl Token {
+    fn parse(l: &Lexeme) -> Result<Self, Box<dyn Error>> {
+        let t = match l.ty {
+            LexemeType::Number => {
+                let n = l.string.parse::<f64>()?;
+                Token::Data(DataType::Number(vec![n]))
+            }
+            LexemeType::Str => {
+                let cs = l.string.chars().collect();
+                Token::Data(DataType::Char(cs))
+            }
+            LexemeType::Array => {
+                let ws = l.string.split_whitespace();
+                let ns: Result<Vec<_>, _> = ws.map(|w| w.parse::<f64>()).into_iter().collect();
+                Token::Data(DataType::Number(ns?))
+            }
+            LexemeType::Definition => {
+                let ws = lex(&l.string)?;
+                if let Some((name, definition)) = ws.split_first() {
+                    Token::Definition((name.string.clone(), Ast::parse(definition)?))
+                } else {
+                    return Err(Box::new(ErrorType::Parse));
+                }
+            }
+            LexemeType::Word => Token::Word(l.string.clone()),
+            LexemeType::Print => Token::Builtin(Builtins::Print),
+            LexemeType::If => Token::Builtin(Builtins::If),
+            LexemeType::And => Token::Builtin(Builtins::And),
+            LexemeType::Or => Token::Builtin(Builtins::Or),
+            LexemeType::Forward => Token::Builtin(Builtins::Forward),
+            LexemeType::Plus => Token::Builtin(Builtins::Plus),
+            LexemeType::Equal => Token::Builtin(Builtins::Equal),
+            LexemeType::Minus => Token::Builtin(Builtins::Minus),
+            LexemeType::Multiply => Token::Builtin(Builtins::Multiply),
+            LexemeType::Divide => Token::Builtin(Builtins::Divide),
+            LexemeType::Concat => Token::Builtin(Builtins::Concat),
+            LexemeType::Duplicate => Token::Builtin(Builtins::Duplicate),
+            LexemeType::Swap => Token::Builtin(Builtins::Swap),
+            LexemeType::Clear => Token::Builtin(Builtins::Clear),
+            LexemeType::ClearButOne => Token::Builtin(Builtins::ClearButOne),
+            LexemeType::Pop => Token::Builtin(Builtins::Pop),
+        };
+
+        Ok(t)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -269,46 +145,131 @@ pub enum Builtins {
     ArrayEnd,
 }
 
-fn sugar(buf: &str) -> String {
-    let mut i = 0;
+fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
+    use LexemeType::*;
 
-    let mut cs = buf.chars();
-    let mut res = String::new();
+    let mut cs = buf.chars().peekable();
+    let mut res = vec![];
+    while let Some(c) = cs.peek() {
+        match c {
+            '#' => {
+                while let Some(cm) = cs.next() { if cm == '\n' { break; } }
+            }
+            '"' => {
+                cs.next();
+                let p = cs.clone().position(|c| c == '"').ok_or(ErrorType::Parse)?;
+                let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
+                while let Some(cm) = cs.next() { if cm == '"' { break; }}
+                res.push(Lexeme { string: l.trim().to_string(), ty: Str });
+            }
+            '[' => {
+                let p = cs.clone().position(|c| c == ']').ok_or(ErrorType::Parse)?;
+                let l: String = cs.clone().collect::<Vec<_>>()[1..p-1].into_iter().collect();
+                while let Some(cm) = cs.next() { if cm == ']' { break; }}
+                res.push(Lexeme {
+                    string: l.trim().to_string(),
+                    ty: Array,
+                });
+            }
+            ':' => {
+                let p = cs.clone().position(|c| c == ';').ok_or(ErrorType::Parse)?;
+                let l: String = cs.clone().collect::<Vec<_>>()[1..p-1].into_iter().collect();
+                while let Some(cm) = cs.next() { if cm == ';' { break; }}
+                res.push(Lexeme {
+                    string: l.trim().to_string(),
+                    ty: Definition,
+                });
+            }
+            '⋀' => res.push(Lexeme {
+                string: "⋀".to_string(),
+                ty: And,
+            }),
+            '⋁' => res.push(Lexeme {
+                string: "⋁".to_string(),
+                ty: Or,
+            }),
+            '+' => res.push(Lexeme {
+                string: "+".to_string(),
+                ty: Plus,
+            }),
+            '-' => res.push(Lexeme {
+                string: "-".to_string(),
+                ty: Minus,
+            }),
+            '*' => res.push(Lexeme {
+                string: "*".to_string(),
+                ty: Multiply,
+            }),
+            '/' => res.push(Lexeme {
+                string: "/".to_string(),
+                ty: Divide,
+            }),
+            ',' => res.push(Lexeme {
+                string: ",".to_string(),
+                ty: Concat,
+            }),
+            '▶' => res.push(Lexeme {
+                string: "▶".to_string(),
+                ty: Duplicate,
+            }),
+            '◀' => res.push(Lexeme {
+                string: "◀".to_string(),
+                ty: Pop,
+            }),
+            '◆' => res.push(Lexeme {
+                string: "◆".to_string(),
+                ty: Swap,
+            }),
+            '▮' => res.push(Lexeme {
+                string: "▮".to_string(),
+                ty: Clear,
+            }),
+            '▯' => res.push(Lexeme {
+                string: "▯".to_string(),
+                ty: ClearButOne,
+            }),
 
-    let mut in_string = false;
-    while i < buf.len() {
-        match cs.next() {
-            Some('"') if in_string => {
-                res.push_str(" ]");
-                in_string = false;
+            '=' => res.push(Lexeme {
+                string: "=".to_string(),
+                ty: Equal,
+            }),
+            '?' => res.push(Lexeme {
+                string: "?".to_string(),
+                ty: If,
+            }),
+            '→' => res.push(Lexeme {
+                string: "→".to_string(),
+                ty: Forward,
+            }),
+            a if a.is_digit(10) => {
+                let p = cs.clone().position(|c| c.is_whitespace()).unwrap_or(1);
+                let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
+                while let Some(cm) = cs.peek() { if !cm.is_whitespace() { cs.next(); } else { break; }}
+                res.push(Lexeme {
+                    string: l.trim().to_string(),
+                    ty: Number,
+                });
             }
-            Some('"') if !in_string => {
-                res.push_str(" [");
-                in_string = true;
+            a if !a.is_whitespace() => {
+                let p = cs.clone().position(|c| c.is_whitespace()).unwrap_or(1);
+                let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
+                while let Some(cm) = cs.peek() { if !cm.is_whitespace() { cs.next(); } else { break; }}
+                res.push(Lexeme {
+                    string: l.trim().to_string(),
+                    ty: Word,
+                });
             }
-            Some(' ') if in_string => res.push_str(" '\\_"),
-            Some(a) if in_string => res.push_str(&format!(" '{}", a)),
-            Some(a) if !in_string => res.push(a),
             _ => {}
         }
-        i += 1;
+        cs.next();
     }
 
-    res
+    Ok(res)
 }
 
-fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
-    buf.split(' ')
-        .filter(|x| *x != "")
-        .map(|x| Lexeme::new(x.trim()))
-        .into_iter()
-        .collect()
-}
-
-pub fn parse(buf: &str) -> Result<(TokenStack, HashMap<String, TokenStack>), ErrorType> {
-    let sugar = sugar(&buf);
-    let lexemes = lex(&sugar);
-    let ast = TokenStack::tokenize(&lexemes?)?;
+pub fn parse(buf: &str) -> Result<(Ast, HashMap<String, Ast>), Box<dyn Error>> {
+    let lexemes = lex(&buf);
+    let ast = Ast::parse(&lexemes?)?;
     let words = resolve_words(&ast.tokens);
     Ok((ast, words))
 }

@@ -7,12 +7,12 @@ mod errors;
 mod eval;
 mod parser;
 use eval::{eval, Val};
-use parser::TokenStack;
+use parser::Ast;
 
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
 
-    let debugging = false;
+    let debugging = true;
 
     let mut stack = Vec::new();
     let mut words = HashMap::new();
@@ -41,12 +41,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn repl(
-    buffer: &str,
-    stack: &mut Vec<Val>,
-    words: &mut HashMap<String, TokenStack>,
-    debugging: bool,
-) {
+fn repl(buffer: &str, stack: &mut Vec<Val>, words: &mut HashMap<String, Ast>, debugging: bool) {
     match parser::parse(buffer) {
         Ok((tokens, w)) => {
             words.extend(w);
