@@ -21,7 +21,10 @@ impl Builtins {
         match self {
             Print => {
                 if let Some((last, _)) = stack.split_last() {
-                    println!("{:?}", last);
+                    match last {
+                        Val::Number(n) => println!("{:?}", n),
+                        Val::Char(c) => println!("{}", String::from_iter(c))
+                    }
                 }
             }
 
