@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use crate::parser::{Builtins, DataType, Token, TokenStack};
+use crate::errors::ErrorType;
 
 #[derive(Debug)]
 enum Op {
@@ -17,7 +18,7 @@ pub enum Val {
 }
 
 impl Builtins {
-    fn eval(&self, stack: &mut Vec<Val>) -> Option<Op> {
+    fn eval(&self, stack: &mut Vec<Val>) -> Result<Option<Op>, ErrorType> {
         use Builtins::*;
         match self {
             Print => {
@@ -27,23 +28,25 @@ impl Builtins {
                         Val::Char(c) => println!("{}", String::from_iter(c)),
                     }
                 }
+                Ok(None)
             }
 
             Plus => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a + b).collect();
-                        stack.push(Val::Number(n))
+                        stack.push(Val::Number(n));
+                        Ok(None)
                     }
                     _ => panic!("Couldn't add values, not all values were numbers."),
                 }
             }
 
             Equal => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         if a == b {
@@ -51,6 +54,7 @@ impl Builtins {
                         } else {
                             stack.push(Val::Number(vec![0.]))
                         }
+                        Ok(None)
                     }
                     (Val::Char(a), Val::Char(b)) => {
                         if a == b {
@@ -58,62 +62,67 @@ impl Builtins {
                         } else {
                             stack.push(Val::Number(vec![0.]))
                         }
+                        Ok(None)
                     }
                     _ => panic!("Couldn't compare values, not all values were comparable."),
                 }
             }
 
             Minus => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a - b).collect();
-                        stack.push(Val::Number(n))
+                        stack.push(Val::Number(n));
+                        Ok(None)
                     }
                     _ => panic!("Couldn't subtract values, not all values were numbers."),
                 }
             }
 
             Multiply => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a * b).collect();
-                        stack.push(Val::Number(n))
+                        stack.push(Val::Number(n));
+                        Ok(None)
                     }
                     _ => panic!("Couldn't multiply values, not all values were numbers."),
                 }
             }
 
             Divide => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a / b).collect();
-                        stack.push(Val::Number(n))
+                        stack.push(Val::Number(n));
+                        Ok(None)
                     }
                     _ => panic!("Couldn't divide values, not all values were numbers."),
                 }
             }
 
             If => {
-                let comparison = stack.pop()?;
+                let comparison = stack.pop().ok_or(ErrorType::Eval)?;
                 match comparison {
                     Val::Number(cmp) => {
                         if cmp.iter().all(|x| *x == 0.) {
-                            return Some(Op::ContinueToForward);
+                            return Ok(Some(Op::ContinueToForward));
                         }
+                        Ok(None)
                     }
                     _ => panic!("Wrong type in comparison or index."),
                 }
             }
 
             And => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         stack.push(Val::Number(
@@ -122,14 +131,15 @@ impl Builtins {
                                 .map(|(a, b)| if *a == 1. && *b == 1. { 1. } else { 0. })
                                 .collect(),
                         ));
+                        Ok(None)
                     }
                     _ => panic!("Both stack elements were not present, or were not numbers."),
                 }
             }
 
             Or => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (n1, n2) {
                     (Val::Number(a), Val::Number(b)) => {
                         stack.push(Val::Number(
@@ -138,52 +148,58 @@ impl Builtins {
                                 .map(|(a, b)| if *a == 1. || *b == 1. { 1. } else { 0. })
                                 .collect(),
                         ));
+                        Ok(None)
                     }
                     _ => panic!("Both stack elements were not present, or were not numbers."),
                 }
             }
 
             Concat => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
 
                 match (n1, n2) {
                     (Val::Number(mut a), Val::Number(b)) => {
                         a.extend(b);
                         stack.push(Val::Number(a));
+                        Ok(None)
                     }
                     (Val::Char(mut a), Val::Char(b)) => {
                         a.extend(b);
                         stack.push(Val::Char(a));
+                        Ok(None)
                     }
                     _ => panic!("Wrong type combination or missing values in concatenation."),
                 }
             }
 
             WordStart => {
-                return Some(Op::ContinueToDefinitionEnd);
+                Ok(Some(Op::ContinueToDefinitionEnd))
             }
 
             ArrayStart => {
-                return Some(Op::ContinueToArrayEnd);
+                Ok(Some(Op::ContinueToArrayEnd))
             }
 
             Duplicate => {
-                let n = stack.pop()?;
+                let n = stack.pop().ok_or(ErrorType::Eval)?;
                 stack.push(n.clone());
                 stack.push(n);
+                Ok(None)
             }
 
             Swap => {
-                let n1 = stack.pop()?;
-                let n2 = stack.pop()?;
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n2 = stack.pop().ok_or(ErrorType::Eval)?;
 
                 stack.push(n1);
                 stack.push(n2);
+                Ok(None)
             }
 
             Clear => {
                 stack.clear();
+                Ok(None)
             }
 
             ClearButOne => {
@@ -192,17 +208,18 @@ impl Builtins {
                     stack.clear();
                     stack.push(l);
                 }
+                Ok(None)
             }
 
             Pop => {
-                stack.pop()?;
+                stack.pop().ok_or(ErrorType::Eval)?;
+                Ok(None)
             }
 
-            Forward => {}
-            WordEnd => {}
-            ArrayEnd => {}
+            Forward => {Ok(None)}
+            WordEnd => {Ok(None)}
+            ArrayEnd => {Ok(None)}
         }
-        None
     }
 }
 
@@ -242,7 +259,7 @@ pub fn eval(
     stack: &mut Vec<Val>,
     words: &HashMap<String, TokenStack>,
     debug: bool,
-) {
+) -> Result<(), ErrorType> {
     use Token::*;
 
     let mut i = 0;
@@ -259,7 +276,7 @@ pub fn eval(
                 DataType::Char(c) => stack.push(Val::Char(c.to_vec())),
             },
             Builtin(func) => {
-                if let Some(ref op) = func.eval(stack) {
+                if let Some(ref op) = func.eval(stack)? {
                     i = eval_op(op, i, &ast);
                 }
             }
@@ -272,4 +289,6 @@ pub fn eval(
         println!("{:?}", stack);
         println!("{:?}", words);
     }
+
+    Ok(())
 }

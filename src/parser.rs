@@ -31,24 +31,24 @@ enum LexemeType {
 }
 
 impl LexemeType {
-    fn new(s: &str) -> LexemeType {
+    fn new(s: &str) -> Result<LexemeType, ErrorType> {
         if let Ok(w) = s.trim().parse::<f64>() {
-            return LexemeType::Number(w);
+            return Ok(LexemeType::Number(w));
         }
 
         let mut cs = s.chars();
         if cs.next() == Some('\'') {
             match cs.next() {
                 Some('\\') => match cs.next() {
-                    Some('_') => return LexemeType::Char(' '),
-                    _ => panic!("Unknown escape sequence"),
+                    Some('_') => return Ok(LexemeType::Char(' ')),
+                    _ => return Err(ErrorType::Parse),
                 },
-                Some(a) => return LexemeType::Char(a),
-                _ => panic!("Couldn't parse character."),
+                Some(a) => return Ok(LexemeType::Char(a)),
+                _ => return Err(ErrorType::Parse),
             }
         }
 
-        match s {
+        let s = match s {
             "#" => LexemeType::Comment,
             "=>" => LexemeType::Print,
             "?" => LexemeType::If,
@@ -71,7 +71,9 @@ impl LexemeType {
             "[" => LexemeType::ArrayStart,
             "]" => LexemeType::ArrayEnd,
             _ => LexemeType::Word(s.to_string()),
-        }
+        };
+
+        Ok(s)
     }
 
     fn is_number(&self) -> bool {
@@ -110,11 +112,11 @@ struct Lexeme {
 }
 
 impl Lexeme {
-    fn new(s: &str) -> Self {
-        Self {
+    fn new(s: &str) -> Result<Self, ErrorType> {
+        Ok(Self {
             string: s.to_string(),
-            ty: LexemeType::new(s),
-        }
+            ty: LexemeType::new(s)?,
+        })
     }
 }
 
@@ -295,17 +297,18 @@ fn sugar(buf: &str) -> String {
     res
 }
 
-fn lex(buf: &str) -> Vec<Lexeme> {
+fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
     buf.split(' ')
         .filter(|x| *x != "")
         .map(|x| Lexeme::new(x.trim()))
+        .into_iter()
         .collect()
 }
 
 pub fn parse(buf: &str) -> Result<(TokenStack, HashMap<String, TokenStack>), ErrorType> {
     let sugar = sugar(&buf);
     let lexemes = lex(&sugar);
-    let ast = TokenStack::tokenize(&lexemes)?;
+    let ast = TokenStack::tokenize(&lexemes?)?;
     let words = resolve_words(&ast.tokens);
     Ok((ast, words))
 }
