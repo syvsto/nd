@@ -34,6 +34,15 @@ struct Lexeme {
     ty: LexemeType,
 }
 
+impl Lexeme {
+    fn new(st: &str, ty: LexemeType) -> Self {
+        Self {
+            string: st.to_string(),
+            ty,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Ast {
     pub tokens: Vec<Token>,
@@ -153,111 +162,85 @@ fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
     while let Some(c) = cs.peek() {
         match c {
             '#' => {
-                while let Some(cm) = cs.next() { if cm == '\n' { break; } }
+                while let Some(cm) = cs.next() {
+                    if cm == '\n' {
+                        break;
+                    }
+                }
             }
             '"' => {
                 cs.next();
                 let p = cs.clone().position(|c| c == '"').ok_or(ErrorType::Parse)?;
                 let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
-                while let Some(cm) = cs.next() { if cm == '"' { break; }}
-                res.push(Lexeme { string: l.trim().to_string(), ty: Str });
+                while let Some(cm) = cs.next() {
+                    if cm == '"' {
+                        break;
+                    }
+                }
+                res.push(Lexeme::new(l.trim(), Str));
             }
             '[' => {
                 let p = cs.clone().position(|c| c == ']').ok_or(ErrorType::Parse)?;
-                let l: String = cs.clone().collect::<Vec<_>>()[1..p-1].into_iter().collect();
-                while let Some(cm) = cs.next() { if cm == ']' { break; }}
-                res.push(Lexeme {
-                    string: l.trim().to_string(),
-                    ty: Array,
-                });
+                let l: String = cs.clone().collect::<Vec<_>>()[1..p - 1]
+                    .into_iter()
+                    .collect();
+                while let Some(cm) = cs.next() {
+                    if cm == ']' {
+                        break;
+                    }
+                }
+                res.push(Lexeme::new(l.trim(), Array));
             }
             ':' => {
                 let p = cs.clone().position(|c| c == ';').ok_or(ErrorType::Parse)?;
-                let l: String = cs.clone().collect::<Vec<_>>()[1..p-1].into_iter().collect();
-                while let Some(cm) = cs.next() { if cm == ';' { break; }}
-                res.push(Lexeme {
-                    string: l.trim().to_string(),
-                    ty: Definition,
-                });
+                let l: String = cs.clone().collect::<Vec<_>>()[1..p - 1]
+                    .into_iter()
+                    .collect();
+                while let Some(cm) = cs.next() {
+                    if cm == ';' {
+                        break;
+                    }
+                }
+                res.push(Lexeme::new(l.trim(), Definition));
             }
-            '⋀' => res.push(Lexeme {
-                string: "⋀".to_string(),
-                ty: And,
-            }),
-            '⋁' => res.push(Lexeme {
-                string: "⋁".to_string(),
-                ty: Or,
-            }),
-            '+' => res.push(Lexeme {
-                string: "+".to_string(),
-                ty: Plus,
-            }),
-            '-' => res.push(Lexeme {
-                string: "-".to_string(),
-                ty: Minus,
-            }),
-            '*' => res.push(Lexeme {
-                string: "*".to_string(),
-                ty: Multiply,
-            }),
-            '/' => res.push(Lexeme {
-                string: "/".to_string(),
-                ty: Divide,
-            }),
-            ',' => res.push(Lexeme {
-                string: ",".to_string(),
-                ty: Concat,
-            }),
-            '▶' => res.push(Lexeme {
-                string: "▶".to_string(),
-                ty: Duplicate,
-            }),
-            '◀' => res.push(Lexeme {
-                string: "◀".to_string(),
-                ty: Pop,
-            }),
-            '◆' => res.push(Lexeme {
-                string: "◆".to_string(),
-                ty: Swap,
-            }),
-            '▮' => res.push(Lexeme {
-                string: "▮".to_string(),
-                ty: Clear,
-            }),
-            '▯' => res.push(Lexeme {
-                string: "▯".to_string(),
-                ty: ClearButOne,
-            }),
-
-            '=' => res.push(Lexeme {
-                string: "=".to_string(),
-                ty: Equal,
-            }),
-            '?' => res.push(Lexeme {
-                string: "?".to_string(),
-                ty: If,
-            }),
-            '→' => res.push(Lexeme {
-                string: "→".to_string(),
-                ty: Forward,
-            }),
+            '⋀' => res.push(Lexeme::new("⋀", And)),
+            '⋁' => res.push(Lexeme::new("⋁", Or)),
+            '+' => res.push(Lexeme::new("+", Plus)),
+            '-' => res.push(Lexeme::new("-", Minus)),
+            '*' => res.push(Lexeme::new("*", Multiply)),
+            '/' => res.push(Lexeme::new("/", Divide)),
+            ',' => res.push(Lexeme::new(",", Concat)),
+            '▶' => res.push(Lexeme::new("▶", Duplicate)),
+            '◀' => res.push(Lexeme::new("◀", Pop)),
+            '◆' => res.push(Lexeme::new("◆", Swap)),
+            '▮' => res.push(Lexeme::new("▮", Clear)),
+            '▯' => res.push(Lexeme::new("▯", ClearButOne)),
+            '=' => res.push(Lexeme::new("=", Equal)),
+            '?' => res.push(Lexeme::new("?", If)),
+            '→' => res.push(Lexeme::new("→", Forward)),
             a if a.is_digit(10) => {
                 let p = cs.clone().position(|c| c.is_whitespace()).unwrap_or(1);
                 let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
-                while let Some(cm) = cs.peek() { if !cm.is_whitespace() { cs.next(); } else { break; }}
-                res.push(Lexeme {
-                    string: l.trim().to_string(),
-                    ty: Number,
-                });
+                while let Some(cm) = cs.peek() {
+                    if !cm.is_whitespace() {
+                        cs.next();
+                    } else {
+                        break;
+                    }
+                }
+                res.push(Lexeme::new(l.trim(), Number));
             }
             a if !a.is_whitespace() => {
                 let p = cs.clone().position(|c| c.is_whitespace()).unwrap_or(1);
                 let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
-                while let Some(cm) = cs.peek() { if !cm.is_whitespace() { cs.next(); } else { break; }}
-                res.push(Lexeme {
-                    string: l.trim().to_string(),
-                    ty: Word,
-                });
+                while let Some(cm) = cs.peek() {
+                    if !cm.is_whitespace() {
+                        cs.next();
+                    } else {
+                        break;
+                    }
+                }
+                res.push(Lexeme::new(l.trim(), Word));
             }
             _ => {}
         }
