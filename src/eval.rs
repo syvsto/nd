@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::iter::FromIterator;
 
 use crate::parser::{Builtins, DataType, Token, TokenStack};
 
@@ -216,6 +217,18 @@ impl Builtins {
 
             Clear => {
                 stack.clear();
+            }
+
+            ClearButOne => {
+                if let Some((last, _)) = stack.split_last() {
+                    let l = last.clone();
+                    stack.clear();
+                    stack.push(l);
+                }
+            }
+
+            Pop => {
+                stack.pop().expect("Couldn't split at last element");
             }
 
             Forward => {}

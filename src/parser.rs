@@ -19,6 +19,8 @@ enum LexemeType {
     Duplicate,
     Swap,
     Clear,
+    ClearButOne,
+    Pop,
     WordStart,
     WordEnd,
     ArrayStart,
@@ -59,7 +61,9 @@ impl LexemeType {
             "," => LexemeType::Concat,
             "<>" => LexemeType::Duplicate,
             "><" => LexemeType::Swap,
+            "<<" => LexemeType::Pop,
             "_" => LexemeType::Clear,
+            "_1" => LexemeType::ClearButOne,
             ":" => LexemeType::WordStart,
             ";" => LexemeType::WordEnd,
             "[" => LexemeType::ArrayStart,
@@ -143,6 +147,8 @@ impl TokenStack {
                 LexemeType::Duplicate => tokens.push(Token::Builtin(Builtins::Duplicate)),
                 LexemeType::Swap => tokens.push(Token::Builtin(Builtins::Swap)),
                 LexemeType::Clear => tokens.push(Token::Builtin(Builtins::Clear)),
+                LexemeType::ClearButOne => tokens.push(Token::Builtin(Builtins::ClearButOne)),
+                LexemeType::Pop => tokens.push(Token::Builtin(Builtins::Pop)),
                 LexemeType::WordStart => {
                     let (next_i, token) = parse_word(&lexemes[i..]);
                     i += next_i;
@@ -245,6 +251,8 @@ pub enum Builtins {
     Duplicate,
     Swap,
     Clear,
+    ClearButOne,
+    Pop,
     If,
     And,
     Or,
