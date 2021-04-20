@@ -128,7 +128,7 @@ impl Builtins {
                         stack.push(Val::Number(
                             b.iter()
                                 .zip(a.iter().cycle())
-                                .map(|(a, b)| if *a == 1. && *b == 1. { 1. } else { 0. })
+                                .map(|(a, b)| if *a >= 1. && *b >= 1. { 1. } else { 0. })
                                 .collect(),
                         ));
                         Ok(None)
@@ -145,7 +145,7 @@ impl Builtins {
                         stack.push(Val::Number(
                             b.iter()
                                 .zip(a.iter().cycle())
-                                .map(|(a, b)| if *a == 1. || *b == 1. { 1. } else { 0. })
+                                .map(|(a, b)| if *a >= 1. || *b >= 1. { 1. } else { 0. })
                                 .collect(),
                         ));
                         Ok(None)
