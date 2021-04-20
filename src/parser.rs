@@ -218,6 +218,7 @@ fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
             '=' => res.push(Lexeme::new("=", Equal)),
             '?' => res.push(Lexeme::new("?", If)),
             '→' => res.push(Lexeme::new("→", Forward)),
+            '_' => res.push(Lexeme::new("_", Print)),
             a if a.is_digit(10) => {
                 let p = cs.clone().position(|c| c.is_whitespace()).unwrap_or(1);
                 let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
