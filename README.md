@@ -8,17 +8,17 @@ Built-in Words
 
 ### IO
 
- * `=>` Print the top stack value.
+ * `_` Print the top stack value.
 
 ### Control flow
 
  * `?` Conditionally evaluate the next code based on the truthiness of the top stack element. If falsy, continue from next `->`.
- * `->` Marker to identify branch end.
+ * `→` Marker to identify branch end.
 
 ### Boolean operators
 
- * `^` Logical _and_ between top two stack elements. If each element has multiple values, perform element-wise _and_.
- * `v` Logical _or_ between top two stack elements. If each element has multiple values, perform element-wise _or.
+ * `⋀` Logical _and_ between top two stack elements. If each element has multiple values, perform element-wise _and_.
+ * `⋁` Logical _or_ between top two stack elements. If each element has multiple values, perform element-wise _or.
 
 All boolean operators repeat the top stack element, so `[ 1 0 1 ] 1 v` evaluates to `[ 1 1 1 ]`.
 
@@ -41,9 +41,11 @@ All boolean operators repeat the top stack element, so `[ 1 2 3 ] 1 +` evaluates
 
 ### Stack manipulation
 
- * `<>` Duplicate top stack element.
- * `><` Swap the top two stack elements.
- * `_` Clear the stack.
+ * `▶` Duplicate top stack element.
+ * `◀` Pop top stack element.
+ * `◆` Swap the top two stack elements.
+ * `▮` Clear the stack.
+ * `▯` Clear all but the top stack element.
 
 ### Definitions
  * `:` Start word definition.
