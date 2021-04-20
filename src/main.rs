@@ -12,7 +12,7 @@ use parser::Ast;
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
 
-    let debugging = true;
+    let mut debugging = false;
 
     let mut stack = Vec::new();
     let mut words = HashMap::new();
@@ -33,13 +33,17 @@ fn main() -> io::Result<()> {
 
             io::stdout().flush().unwrap();
 
-            if buffer.trim() == "quit" {
+            if buffer.trim() == ".debug" {
+                debugging = !debugging;
+            }
+            if buffer.trim() == ".quit" {
                 break;
             }
         }
     }
     Ok(())
 }
+
 
 fn repl(buffer: &str, stack: &mut Vec<Val>, words: &mut HashMap<String, Ast>, debugging: bool) {
     match parser::parse(buffer) {
