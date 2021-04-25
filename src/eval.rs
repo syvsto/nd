@@ -1,31 +1,23 @@
 use std::collections::HashMap;
-use std::iter::FromIterator;
-
 use crate::errors::ErrorType;
-use crate::parser::{Ast, Builtins, DataType, Token};
+use crate::parser::{Ast, Builtins, Token};
+use crate::data::{Ty, A, u8_f, vf_to_u8, u8_to_vf};
 
 #[derive(Debug)]
 enum Op {
-    ContinueToForward,
     ContinueToDefinitionEnd,
     ContinueToArrayEnd,
 }
 
-#[derive(Debug, Clone)]
-pub enum Val {
-    Number(Vec<f64>),
-    Char(Vec<char>),
-}
-
 impl Builtins {
-    fn eval(&self, stack: &mut Vec<Val>) -> Result<Option<Op>, ErrorType> {
+    fn eval(&self, stack: &mut Vec<A>) -> Result<Option<Op>, ErrorType> {
         use Builtins::*;
         match self {
             Print => {
                 if let Some((last, _)) = stack.split_last() {
-                    match last {
-                        Val::Number(n) => println!("{:?}", n),
-                        Val::Char(c) => println!("{}", String::from_iter(c)),
+                    match last.ty {
+                        Ty::F => println!("{:?}", u8_to_vf(&last.c)),
+                        Ty::C => println!("{:?}", std::str::from_utf8(&last.c)),
                     }
                 }
                 Ok(None)
@@ -34,10 +26,19 @@ impl Builtins {
             Plus => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                match (n1, n2) {
-                    (Val::Number(a), Val::Number(b)) => {
-                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a + b).collect();
-                        stack.push(Val::Number(n));
+                match (&n1.ty, &n2.ty) {
+                    (Ty::F, Ty::F) => {
+                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut v = Vec::with_capacity(n1.l);
+                        for n in n2.s.iter() {
+                            for i in 0..*n {
+                                let i = i * 4;
+                                let f = u8_f(&n1.c[i..i+4]) + u8_f(&n2.c[i..i+4]);
+                                v.push(f);
+                            }
+                        }
+                        r.c = vf_to_u8(&v).to_vec();
+                        stack.push(r);
                         Ok(None)
                     }
                     _ => panic!("Couldn't add values, not all values were numbers."),
@@ -47,130 +48,148 @@ impl Builtins {
             Equal => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                match (n1, n2) {
-                    (Val::Number(a), Val::Number(b)) => {
-                        if a == b {
-                            stack.push(Val::Number(vec![1.]))
-                        } else {
-                            stack.push(Val::Number(vec![0.]))
-                        }
-                        Ok(None)
-                    }
-                    (Val::Char(a), Val::Char(b)) => {
-                        if a == b {
-                            stack.push(Val::Number(vec![1.]))
-                        } else {
-                            stack.push(Val::Number(vec![0.]))
-                        }
-                        Ok(None)
-                    }
-                    _ => panic!("Couldn't compare values, not all values were comparable."),
+                if n1 == n2 {
+                    stack.push(A::new_f(1.))
+                } else {
+                    stack.push(A::new_f(0.))
                 }
+                Ok(None)
             }
 
             Minus => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                match (n1, n2) {
-                    (Val::Number(a), Val::Number(b)) => {
-                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a - b).collect();
-                        stack.push(Val::Number(n));
+                match (&n1.ty, &n2.ty) {
+                    (Ty::F, Ty::F) => {
+                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut v = Vec::with_capacity(n1.l);
+                        for n in n2.s.iter() {
+                            for i in 0..*n {
+                                let i = i * 4;
+                                let f = u8_f(&n1.c[i..i+4]) - u8_f(&n2.c[i..i+4]);
+                                v.push(f);
+                            }
+                        }
+                        r.c = vf_to_u8(&v).to_vec();
+                        stack.push(r);
                         Ok(None)
                     }
-                    _ => panic!("Couldn't subtract values, not all values were numbers."),
+                    _ => panic!("Couldn't add values, not all values were numbers."),
                 }
             }
 
             Multiply => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                match (n1, n2) {
-                    (Val::Number(a), Val::Number(b)) => {
-                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a * b).collect();
-                        stack.push(Val::Number(n));
+                match (&n1.ty, &n2.ty) {
+                    (Ty::F, Ty::F) => {
+                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut v = Vec::with_capacity(n1.l);
+                        for n in n2.s.iter() {
+                            for i in 0..*n {
+                                let i = i * 4;
+                                let f = u8_f(&n1.c[i..i+4]) * u8_f(&n2.c[i..i+4]);
+                                v.push(f);
+                            }
+                        }
+                        r.c = vf_to_u8(&v).to_vec();
+                        stack.push(r);
                         Ok(None)
                     }
-                    _ => panic!("Couldn't multiply values, not all values were numbers."),
+                    _ => panic!("Couldn't add values, not all values were numbers."),
                 }
             }
 
             Divide => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                match (n1, n2) {
-                    (Val::Number(a), Val::Number(b)) => {
-                        let n = b.iter().zip(a.iter().cycle()).map(|(a, b)| a / b).collect();
-                        stack.push(Val::Number(n));
+                match (&n1.ty, &n2.ty) {
+                    (Ty::F, Ty::F) => {
+                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut v = Vec::with_capacity(n1.l);
+                        for n in n2.s.iter() {
+                            for i in 0..*n {
+                                let i = i * 4;
+                                let f = u8_f(&n1.c[i..i+4]) / u8_f(&n2.c[i..i+4]);
+                                v.push(f);
+                            }
+                        }
+                        r.c = vf_to_u8(&v).to_vec();
+                        stack.push(r);
                         Ok(None)
                     }
-                    _ => panic!("Couldn't divide values, not all values were numbers."),
+                    _ => panic!("Couldn't add values, not all values were numbers."),
                 }
             }
 
             If => {
-                let comparison = stack.pop().ok_or(ErrorType::Eval)?;
-                match comparison {
-                    Val::Number(cmp) => {
-                        if cmp.iter().all(|x| *x == 0.) {
-                            return Ok(Some(Op::ContinueToForward));
-                        }
-                        Ok(None)
-                    }
-                    _ => panic!("Wrong type in comparison or index."),
+                let a = stack.pop().ok_or(ErrorType::Eval)?;
+                match (&a.ty, &a.r) {
+                    (Ty::F, 0) => Ok(None),
+                    _ => Err(ErrorType::Eval),
                 }
             }
 
             And => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                match (n1, n2) {
-                    (Val::Number(a), Val::Number(b)) => {
-                        stack.push(Val::Number(
-                            b.iter()
-                                .zip(a.iter().cycle())
-                                .map(|(a, b)| if *a >= 1. && *b >= 1. { 1. } else { 0. })
-                                .collect(),
-                        ));
+                match (&n1.ty, &n2.ty) {
+                    (Ty::F, Ty::F) => {
+                        let mut t = 1.;
+                        for n in n2.s.iter() {
+                            for i in 0..*n {
+                                let i = i * 4;
+                                if u8_f(&n1.c[i..i+4]) <= 0. && u8_f(&n2.c[i..i+4]) <= 0. {
+                                    t = 0.;
+                                    break;
+                                }
+                            }
+                        }
+                        stack.push(A::new_f(t));
                         Ok(None)
                     }
-                    _ => panic!("Both stack elements were not present, or were not numbers."),
+                    _ => panic!("Couldn't add values, not all values were numbers."),
                 }
             }
 
             Or => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                match (n1, n2) {
-                    (Val::Number(a), Val::Number(b)) => {
-                        stack.push(Val::Number(
-                            b.iter()
-                                .zip(a.iter().cycle())
-                                .map(|(a, b)| if *a >= 1. || *b >= 1. { 1. } else { 0. })
-                                .collect(),
-                        ));
+                match (&n1.ty, &n2.ty) {
+                    (Ty::F, Ty::F) => {
+                        let mut t = 1.;
+                        for n in n2.s.iter() {
+                            for i in 0..*n {
+                                let i = i * 4;
+                                if u8_f(&n1.c[i..i+4]) <= 0. || u8_f(&n2.c[i..i+4]) <= 0. {
+                                    t = 0.;
+                                    break;
+                                }
+                            }
+                        }
+                        stack.push(A::new_f(t));
                         Ok(None)
                     }
-                    _ => panic!("Both stack elements were not present, or were not numbers."),
+                    _ => panic!("Couldn't add values, not all values were numbers."),
                 }
             }
 
             Concat => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-
-                match (n1, n2) {
-                    (Val::Number(mut a), Val::Number(b)) => {
-                        a.extend(b);
-                        stack.push(Val::Number(a));
-                        Ok(None)
-                    }
-                    (Val::Char(mut a), Val::Char(b)) => {
-                        a.extend(b);
-                        stack.push(Val::Char(a));
-                        Ok(None)
-                    }
-                    _ => panic!("Wrong type combination or missing values in concatenation."),
+                let s: Vec<_> = n1.s.iter().zip(n2.s.iter()).map(|(a,b)| a + b).collect();
+                let mut r = A::new(n1.ty,n1.r,n1.l+n2.l,s.clone(),Vec::with_capacity(n1.l+n2.l));
+                let mut a_i = 0; 
+                let mut b_i = 0;
+                for i in 0..s.len() {
+                    let a = &n1.c[a_i..n1.s[i]];
+                    let b = &n2.c[b_i..n2.s[i]];
+                    let mut c = [b,a].concat();
+                    a_i = n1.s[i]; b_i = n2.s[i];
+                    r.c.append(&mut c);
                 }
+                stack.push(r);
+                Ok(None)
             }
 
             WordStart => Ok(Some(Op::ContinueToDefinitionEnd)),
@@ -230,18 +249,13 @@ fn eval_op(op: &Op, current_index: usize, ast: &Ast) -> usize {
     use Op::*;
 
     match op {
-        ContinueToForward => {
-            if let Some(v) = next_of_type(Builtins::Forward, &ast.tokens) {
-                return v;
-            }
-        }
         ContinueToDefinitionEnd => {
-            if let Some(v) = next_of_type(Builtins::WordEnd, &ast.tokens) {
+            if let Some(v) = next_of_type(Builtins::WordEnd, &ast) {
                 return v;
             }
         }
         ContinueToArrayEnd => {
-            if let Some(v) = next_of_type(Builtins::ArrayEnd, &ast.tokens) {
+            if let Some(v) = next_of_type(Builtins::ArrayEnd, &ast) {
                 return v;
             }
         }
@@ -252,7 +266,7 @@ fn eval_op(op: &Op, current_index: usize, ast: &Ast) -> usize {
 
 pub fn eval(
     ast: &Ast,
-    stack: &mut Vec<Val>,
+    stack: &mut Vec<A>,
     words: &HashMap<String, Ast>,
     debug: bool,
 ) -> Result<(), ErrorType> {
@@ -260,17 +274,14 @@ pub fn eval(
 
     let mut i = 0;
 
-    while i < ast.tokens.len() {
-        match &ast.tokens[i] {
+    while i < ast.len() {
+        match &ast[i] {
             Word(name) => {
                 if let Some(word) = words.get(name.as_str()) {
-                    eval(word, stack, words, debug);
+                    let _ = eval(word, stack, words, debug);
                 }
             }
-            Data(data) => match data {
-                DataType::Number(n) => stack.push(Val::Number(n.to_vec())),
-                DataType::Char(c) => stack.push(Val::Char(c.to_vec())),
-            },
+            Data(data) => stack.push(data.clone()),
             Builtin(func) => {
                 if let Some(ref op) = func.eval(stack)? {
                     i = eval_op(op, i, &ast);

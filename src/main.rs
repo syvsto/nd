@@ -3,11 +3,13 @@ use std::env;
 use std::fs;
 use std::io::{self, Write};
 
+mod data;
 mod errors;
 mod eval;
 mod parser;
-use eval::{eval, Val};
+use eval::{eval};
 use parser::Ast;
+use data::A;
 
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
@@ -45,11 +47,11 @@ fn main() -> io::Result<()> {
 }
 
 
-fn repl(buffer: &str, stack: &mut Vec<Val>, words: &mut HashMap<String, Ast>, debugging: bool) {
+fn repl(buffer: &str, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>, debugging: bool) {
     match parser::parse(buffer) {
         Ok((tokens, w)) => {
             words.extend(w);
-            eval(&tokens, stack, words, debugging);
+            let _ = eval(&tokens, stack, words, debugging);
         }
         Err(err) => println!("Couldn't parse line: {:?}", err),
     }

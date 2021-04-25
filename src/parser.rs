@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 
 use crate::errors::ErrorType;
+use crate::data::{A, Ty, vf_to_u8};
 
 #[derive(Debug, Clone, PartialEq)]
 enum LexemeType {
@@ -43,17 +44,11 @@ impl Lexeme {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Ast {
-    pub tokens: Vec<Token>,
-}
+pub type Ast = Vec<Token>;
 
-impl Ast {
-    fn parse(lexemes: &[Lexeme]) -> Result<Self, Box<dyn Error>> {
-        let tokens: Result<Vec<_>, _> = lexemes.iter().map(|l| Token::parse(l)).collect();
-
-        Ok(Self { tokens: tokens? })
-    }
+fn parse_ast(lexemes: &[Lexeme]) -> Result<Ast, Box<dyn Error>> {
+    let tokens: Result<Vec<_>, _> = lexemes.iter().map(|l| Token::parse(l)).collect();
+    Ok(tokens?)
 }
 
 fn resolve_words(tokens: &[Token]) -> HashMap<String, Ast> {
@@ -70,15 +65,9 @@ fn resolve_words(tokens: &[Token]) -> HashMap<String, Ast> {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum DataType {
-    Number(Vec<f64>),
-    Char(Vec<char>),
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Word(String),
-    Data(DataType),
+    Data(A),
     Builtin(Builtins),
     Definition((String, Ast)),
 }
@@ -87,22 +76,23 @@ impl Token {
     fn parse(l: &Lexeme) -> Result<Self, Box<dyn Error>> {
         let t = match l.ty {
             LexemeType::Number => {
-                let n = l.string.parse::<f64>()?;
-                Token::Data(DataType::Number(vec![n]))
+                let n = l.string.parse::<f32>()?;
+                Token::Data(A::new_f(n))
             }
             LexemeType::Str => {
-                let cs = l.string.chars().collect();
-                Token::Data(DataType::Char(cs))
+                let len = l.string.len() * 4;
+                Token::Data(A::new(Ty::C,1,len,vec![len],l.string.as_bytes().to_vec()))
             }
             LexemeType::Array => {
                 let ws = l.string.split_whitespace();
-                let ns: Result<Vec<_>, _> = ws.map(|w| w.parse::<f64>()).into_iter().collect();
-                Token::Data(DataType::Number(ns?))
+                let ns = ws.map(|w| w.parse::<f32>()).into_iter().collect::<Result<Vec<_>, _>>()?;
+                let len = ns.len() * 4;
+                Token::Data(A::new(Ty::F,1,len,vec![len],vf_to_u8(ns.as_slice()).to_vec()))
             }
             LexemeType::Definition => {
                 let ws = lex(&l.string)?;
                 if let Some((name, definition)) = ws.split_first() {
-                    Token::Definition((name.string.clone(), Ast::parse(definition)?))
+                    Token::Definition((name.string.clone(), parse_ast(definition)?))
                 } else {
                     return Err(Box::new(ErrorType::Parse));
                 }
@@ -253,7 +243,7 @@ fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
 
 pub fn parse(buf: &str) -> Result<(Ast, HashMap<String, Ast>), Box<dyn Error>> {
     let lexemes = lex(&buf);
-    let ast = Ast::parse(&lexemes?)?;
-    let words = resolve_words(&ast.tokens);
+    let ast = parse_ast(&lexemes?)?;
+    let words = resolve_words(&ast);
     Ok((ast, words))
 }
