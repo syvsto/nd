@@ -14,8 +14,6 @@ use data::A;
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
 
-    let mut debugging = false;
-
     let mut stack = Vec::new();
     let mut words = HashMap::new();
 
@@ -23,31 +21,45 @@ fn main() -> io::Result<()> {
     if let Some(f) = args.nth(1) {
         buffer = fs::read_to_string(f).expect("Invalid file name.");
         for line in buffer.lines() {
-            repl(&line, &mut stack, &mut words, debugging);
+            run(&line, &mut stack, &mut words, false);
         }
     } else {
-        loop {
-            buffer.clear();
-            io::stdin().read_line(&mut buffer)?;
-            io::stdout().flush().unwrap();
+        repl(&mut buffer, &mut stack, &mut words);
+    }
+    Ok(())
+}
 
-            repl(&buffer, &mut stack, &mut words, debugging);
+fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>) -> io::Result<()> {
+    let mut debugging = false;
 
-            io::stdout().flush().unwrap();
+    loop {
+        buffer.clear();
+        io::stdin().read_line(buffer)?;
+        io::stdout().flush().unwrap();
 
-            if buffer.trim() == ".debug" {
-                debugging = !debugging;
+        run(&buffer, stack, words, debugging);
+
+        io::stdout().flush().unwrap();
+
+        if buffer.trim() == ".debug" {
+            debugging = !debugging;
+        }
+        if &buffer[..5] == ".load" {
+            let file = fs::read_to_string(&buffer[6..].trim()).expect("Invalid file name.");
+            for line in file.lines() {
+                run(&line, stack, words, debugging);
             }
-            if buffer.trim() == ".quit" {
-                break;
-            }
+        }
+
+        if buffer.trim() == ".quit" {
+            break;
         }
     }
     Ok(())
 }
 
 
-fn repl(buffer: &str, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>, debugging: bool) {
+fn run(buffer: &str, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>, debugging: bool) {
     match parser::parse(buffer) {
         Ok((tokens, w)) => {
             words.extend(w);
