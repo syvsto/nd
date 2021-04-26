@@ -80,13 +80,14 @@ impl Token {
                 Token::Data(A::new_f(n))
             }
             LexemeType::Str => {
-                let len = l.string.len() * 4;
+                let len = l.string.len();
                 Token::Data(A::new(Ty::C,1,len,vec![len],l.string.as_bytes().to_vec()))
             }
             LexemeType::Array => {
                 let ws = l.string.split_whitespace();
-                let ns = ws.map(|w| w.parse::<f32>()).into_iter().collect::<Result<Vec<_>, _>>()?;
-                let len = ns.len() * 4;
+                let ns: Result<Vec<_>,_> = ws.map(|w| w.parse::<f32>()).into_iter().collect();
+                let ns = ns?;
+                let len = ns.len();
                 Token::Data(A::new(Ty::F,1,len,vec![len],vf_to_u8(ns.as_slice()).to_vec()))
             }
             LexemeType::Definition => {

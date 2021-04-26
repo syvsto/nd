@@ -1,8 +1,18 @@
 use std::convert::TryInto;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Ty {
     F, C,
+}
+
+impl Ty {
+    pub fn size(&self) -> usize {
+        use Ty::*;
+        match self {
+            F => 4,
+            C => 4,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

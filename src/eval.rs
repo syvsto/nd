@@ -182,8 +182,10 @@ impl Builtins {
                 let mut a_i = 0; 
                 let mut b_i = 0;
                 for i in 0..s.len() {
-                    let a = &n1.c[a_i..n1.s[i]];
-                    let b = &n2.c[b_i..n2.s[i]];
+                    let a_e = n1.s[i] * n1.ty.size();
+                    let b_e = n2.s[i] * n2.ty.size();
+                    let a = &n1.c[a_i..a_e];
+                    let b = &n2.c[b_i..b_e];
                     let mut c = [b,a].concat();
                     a_i = n1.s[i]; b_i = n2.s[i];
                     r.c.append(&mut c);
