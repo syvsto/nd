@@ -7,9 +7,15 @@ mod data;
 mod errors;
 mod eval;
 mod parser;
-use eval::{eval};
-use parser::Ast;
 use data::A;
+use eval::eval;
+use parser::Ast;
+
+use crossterm::{
+    cursor,
+    event::{self, Event, KeyCode, KeyEvent},
+    execute, terminal, Result,
+};
 
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
@@ -29,35 +35,106 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>) -> io::Result<()> {
+fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>) -> Result<()> {
     let mut debugging = false;
 
     loop {
-        buffer.clear();
-        io::stdin().read_line(buffer)?;
-        io::stdout().flush().unwrap();
+        match event::read()? {
+            Event::Key(k) => match k {
+                KeyEvent {
+                    code: KeyCode::Char(c),
+                    ..
+                } => {
+                    print!("{}", c);
+                    buffer.push(c);
+                    io::stdout().flush().unwrap();
+                }
+                KeyEvent {
+                    code: KeyCode::Enter,
+                    ..
+                } => {
+                    if buffer.trim() == ".debug" {
+                        debugging = !debugging;
+                    }
+                    if let Some(i) = buffer.char_indices().map(|(i,_)| i).nth(5) {
+                        if buffer.len() > 5 && &buffer[..i] == ".load" {
+                            let file =
+                                fs::read_to_string(&buffer[i..].trim()).expect("Invalid file name.");
+                            for line in file.lines() {
+                                run(&line, stack, words, debugging);
+                            }
+                        }
+                    }
 
-        run(&buffer, stack, words, debugging);
+                    if buffer.trim() == ".quit" {
+                        break;
+                    }
 
-        io::stdout().flush().unwrap();
+                    println!("");
+                    run(&buffer, stack, words, debugging);
+                    io::stdout().flush().unwrap();
 
-        if buffer.trim() == ".debug" {
-            debugging = !debugging;
-        }
-        if &buffer[..5] == ".load" {
-            let file = fs::read_to_string(&buffer[6..].trim()).expect("Invalid file name.");
-            for line in file.lines() {
-                run(&line, stack, words, debugging);
-            }
-        }
-
-        if buffer.trim() == ".quit" {
-            break;
+                    buffer.clear();
+                }
+                KeyEvent {
+                    code: KeyCode::Tab, ..
+                } => {
+                    let l = buffer.len();
+                    if l >= 1 {
+                        match &buffer[l - 1..] {
+                            "d" => {
+                                print_char_in_place(buffer, Some('▶'));
+                            }
+                            "p" => {
+                                print_char_in_place(buffer, Some('◀'));
+                            }
+                            "#" => {
+                                print_char_in_place(buffer, Some('◆'));
+                            }
+                            "!" => {
+                                print_char_in_place(buffer, Some('▮'));
+                            }
+                            "?" => {
+                                print_char_in_place(buffer, Some('▯'));
+                            }
+                            ">" => {
+                                print_char_in_place(buffer, Some('→'));
+                            }
+                            "^" => {
+                                print_char_in_place(buffer, Some('⋀'));
+                            }
+                            "v" => {
+                                print_char_in_place(buffer, Some('⋁'));
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                KeyEvent {
+                    code: KeyCode::Backspace,
+                    ..
+                } => print_char_in_place(buffer, None),
+                _ => {}
+            },
+            _ => {}
         }
     }
     Ok(())
 }
 
+fn print_char_in_place(buffer: &mut String, c: Option<char>) {
+    let _ = buffer.pop();
+    execute!(
+        io::stdout(),
+        cursor::MoveLeft(1),
+        terminal::Clear(terminal::ClearType::UntilNewLine)
+    );
+    if let Some(s) = c {
+        buffer.push(s);
+        print!("{}", s);
+    }
+    io::stdout().flush().unwrap();
+}
 
 fn run(buffer: &str, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>, debugging: bool) {
     match parser::parse(buffer) {

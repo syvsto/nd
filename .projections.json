@@ -7,6 +7,6 @@
     },
     "*": {
         "make": "cargo check",
-        "dispatch": "rlwrap cargo run"
+        "dispatch": "cargo run"
     }
 }
