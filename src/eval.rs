@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use crate::data::{u8_f, u8_to_vf, vf_to_u8, Ty, A};
 use crate::errors::ErrorType;
 use crate::parser::{Ast, Builtins, Token};
-use crate::data::{Ty, A, u8_f, vf_to_u8, u8_to_vf};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 enum Op {
@@ -28,12 +28,12 @@ impl Builtins {
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (&n1.ty, &n2.ty) {
                     (Ty::F, Ty::F) => {
-                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut r = A::new(Ty::F, n1.r, n1.l, n1.s.clone(), vec![0; n1.l]);
                         let mut v = Vec::with_capacity(n1.l);
                         for n in n2.s.iter() {
                             for i in 0..*n {
                                 let i = i * 4;
-                                let f = u8_f(&n1.c[i..i+4]) + u8_f(&n2.c[i..i+4]);
+                                let f = u8_f(&n1.c[i..i + 4]) + u8_f(&n2.c[i..i + 4]);
                                 v.push(f);
                             }
                         }
@@ -61,12 +61,12 @@ impl Builtins {
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (&n1.ty, &n2.ty) {
                     (Ty::F, Ty::F) => {
-                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut r = A::new(Ty::F, n1.r, n1.l, n1.s.clone(), vec![0; n1.l]);
                         let mut v = Vec::with_capacity(n1.l);
                         for n in n2.s.iter() {
                             for i in 0..*n {
                                 let i = i * 4;
-                                let f = u8_f(&n1.c[i..i+4]) - u8_f(&n2.c[i..i+4]);
+                                let f = u8_f(&n1.c[i..i + 4]) - u8_f(&n2.c[i..i + 4]);
                                 v.push(f);
                             }
                         }
@@ -83,12 +83,12 @@ impl Builtins {
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (&n1.ty, &n2.ty) {
                     (Ty::F, Ty::F) => {
-                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut r = A::new(Ty::F, n1.r, n1.l, n1.s.clone(), vec![0; n1.l]);
                         let mut v = Vec::with_capacity(n1.l);
                         for n in n2.s.iter() {
                             for i in 0..*n {
                                 let i = i * 4;
-                                let f = u8_f(&n1.c[i..i+4]) * u8_f(&n2.c[i..i+4]);
+                                let f = u8_f(&n1.c[i..i + 4]) * u8_f(&n2.c[i..i + 4]);
                                 v.push(f);
                             }
                         }
@@ -105,12 +105,12 @@ impl Builtins {
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 match (&n1.ty, &n2.ty) {
                     (Ty::F, Ty::F) => {
-                        let mut r = A::new(Ty::F,n1.r,n1.l,n1.s.clone(),vec![0;n1.l]);
+                        let mut r = A::new(Ty::F, n1.r, n1.l, n1.s.clone(), vec![0; n1.l]);
                         let mut v = Vec::with_capacity(n1.l);
                         for n in n2.s.iter() {
                             for i in 0..*n {
                                 let i = i * 4;
-                                let f = u8_f(&n1.c[i..i+4]) / u8_f(&n2.c[i..i+4]);
+                                let f = u8_f(&n1.c[i..i + 4]) / u8_f(&n2.c[i..i + 4]);
                                 v.push(f);
                             }
                         }
@@ -139,7 +139,7 @@ impl Builtins {
                         for n in n2.s.iter() {
                             for i in 0..*n {
                                 let i = i * 4;
-                                if u8_f(&n1.c[i..i+4]) <= 0. && u8_f(&n2.c[i..i+4]) <= 0. {
+                                if u8_f(&n1.c[i..i + 4]) <= 0. && u8_f(&n2.c[i..i + 4]) <= 0. {
                                     t = 0.;
                                     break;
                                 }
@@ -161,7 +161,7 @@ impl Builtins {
                         for n in n2.s.iter() {
                             for i in 0..*n {
                                 let i = i * 4;
-                                if u8_f(&n1.c[i..i+4]) <= 0. || u8_f(&n2.c[i..i+4]) <= 0. {
+                                if u8_f(&n1.c[i..i + 4]) <= 0. || u8_f(&n2.c[i..i + 4]) <= 0. {
                                     t = 0.;
                                     break;
                                 }
@@ -177,17 +177,24 @@ impl Builtins {
             Concat => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                let s: Vec<_> = n1.s.iter().zip(n2.s.iter()).map(|(a,b)| a + b).collect();
-                let mut r = A::new(n1.ty,n1.r,n1.l+n2.l,s.clone(),Vec::with_capacity(n1.l+n2.l));
-                let mut a_i = 0; 
+                let s: Vec<_> = n1.s.iter().zip(n2.s.iter()).map(|(a, b)| a + b).collect();
+                let mut r = A::new(
+                    n1.ty,
+                    n1.r,
+                    n1.l + n2.l,
+                    s.clone(),
+                    Vec::with_capacity(n1.l + n2.l),
+                );
+                let mut a_i = 0;
                 let mut b_i = 0;
                 for i in 0..s.len() {
                     let a_e = n1.s[i] * n1.ty.size();
                     let b_e = n2.s[i] * n2.ty.size();
                     let a = &n1.c[a_i..a_e];
                     let b = &n2.c[b_i..b_e];
-                    let mut c = [b,a].concat();
-                    a_i = n1.s[i]; b_i = n2.s[i];
+                    let mut c = [b, a].concat();
+                    a_i = n1.s[i];
+                    b_i = n2.s[i];
                     r.c.append(&mut c);
                 }
                 stack.push(r);

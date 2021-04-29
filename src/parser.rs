@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::error::Error;
 
+use crate::data::{vf_to_u8, Ty, A};
 use crate::errors::ErrorType;
-use crate::data::{A, Ty, vf_to_u8};
 
 #[derive(Debug, Clone, PartialEq)]
 enum LexemeType {
@@ -81,14 +81,26 @@ impl Token {
             }
             LexemeType::Str => {
                 let len = l.string.len();
-                Token::Data(A::new(Ty::C,1,len,vec![len],l.string.as_bytes().to_vec()))
+                Token::Data(A::new(
+                    Ty::C,
+                    1,
+                    len,
+                    vec![len],
+                    l.string.as_bytes().to_vec(),
+                ))
             }
             LexemeType::Array => {
                 let ws = l.string.split_whitespace();
-                let ns: Result<Vec<_>,_> = ws.map(|w| w.parse::<f32>()).into_iter().collect();
+                let ns: Result<Vec<_>, _> = ws.map(|w| w.parse::<f32>()).into_iter().collect();
                 let ns = ns?;
                 let len = ns.len();
-                Token::Data(A::new(Ty::F,1,len,vec![len],vf_to_u8(ns.as_slice()).to_vec()))
+                Token::Data(A::new(
+                    Ty::F,
+                    1,
+                    len,
+                    vec![len],
+                    vf_to_u8(ns.as_slice()).to_vec(),
+                ))
             }
             LexemeType::Definition => {
                 let ws = lex(&l.string)?;

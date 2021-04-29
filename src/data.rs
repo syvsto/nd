@@ -2,7 +2,8 @@ use std::convert::TryInto;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Ty {
-    F, C,
+    F,
+    C,
 }
 
 impl Ty {
@@ -20,20 +21,18 @@ pub struct A {
     pub ty: Ty,
     pub r: usize,
     pub l: usize,
-    pub s: Vec<usize>, 
+    pub s: Vec<usize>,
     pub c: Vec<u8>,
 }
 
 impl A {
     pub fn new(ty: Ty, r: usize, l: usize, s: Vec<usize>, c: Vec<u8>) -> Self {
-        Self {
-            ty, r, l, s, c
-        }
+        Self { ty, r, l, s, c }
     }
 
     pub fn new_f(n: f32) -> Self {
         let v = &vec![n];
-        Self::new(Ty::F,0,1,vec![1],vf_to_u8(v).to_vec())
+        Self::new(Ty::F, 0, 1, vec![1], vf_to_u8(v).to_vec())
     }
 }
 
