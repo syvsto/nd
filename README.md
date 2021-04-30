@@ -12,40 +12,40 @@ Built-in Words
 
 ### Control flow
 
- * `?` Conditionally evaluate the next code based on the truthiness of the top stack element. If falsy, continue from next `->`.
- * `→` Marker to identify branch end.
+ * `if` Conditionally evaluate the next code based on the truthiness of the top stack element. If falsy, continue from next `->`.
+ * `then` Marker to identify branch end.
 
 ### Boolean operators
 
- * `⋀` Logical _and_ between top two stack elements. If each element has multiple values, perform element-wise _and_.
- * `⋁` Logical _or_ between top two stack elements. If each element has multiple values, perform element-wise _or.
+ * `and` Logical _and_ between top two stack elements. If each element has multiple values, perform element-wise _and_.
+ * `or` Logical _or_ between top two stack elements. If each element has multiple values, perform element-wise _or.
 
 All boolean operators repeat the top stack element, so `[ 1 0 1 ] 1 v` evaluates to `[ 1 1 1 ]`.
 
 ### Equality
 
- * `=` Test value-wise equality between top two stack elements.
+ * `eql` Test value-wise equality between top two stack elements.
 
-### Mathematical operators
+### Arithmetic operators
 
  * `+` Value-wise addition between top two stack elements.
  * `-` Value-wise subtraction between top two stack elements.
  * `*` Value-wise multiplication between top two stack elements.
  * `/` Value-wise division between top two stack elements.
 
-All boolean operators repeat the top stack element, so `[ 1 2 3 ] 1 +` evaluates to `[ 2 3 4 ]`.
+All arithmetic operators repeat the top stack element, so `[ 1 2 3 ] 1 +` evaluates to `[ 2 3 4 ]`.
 
 ### In-element manipulation
 
- * `,` Concatenate top stack element to the following stack element.
+ * `cat` Concatenate top stack element to the following stack element.
 
 ### Stack manipulation
 
- * `▶` Duplicate top stack element.
- * `◀` Pop top stack element.
- * `◆` Swap the top two stack elements.
- * `▮` Clear the stack.
- * `▯` Clear all but the top stack element.
+ * `dup` Duplicate top stack element.
+ * `pop` Pop top stack element.
+ * `swp` Swap the top two stack elements.
+ * `clr` Clear the stack.
+ * `clr1` Clear all but the top stack element.
 
 ### Definitions
  * `:` Start word definition.
