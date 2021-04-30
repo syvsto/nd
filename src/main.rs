@@ -109,6 +109,18 @@ fn print_help() {
     println!("Builtin functions");
     println!("=================");
     println!("");
+    println!("IO");
+    println!("--");
+    println!("");
+    println!("_ Print the top stack value.");
+    println!("");
+    println!("Control flow");
+    println!("------------");
+    println!("");
+    println!("if Conditionally evaluate the next code based on the truthiness of the top stack element. If falsy, continue from next then.");
+    println!("then Marker to identify branch end.");
+    println!("do Repeat the following word n times, where n is the value of the top stack element.");
+    println!("");
     println!("Equality");
     println!("--------");
     println!("");

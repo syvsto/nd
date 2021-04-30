@@ -12,8 +12,9 @@ Built-in Words
 
 ### Control flow
 
- * `if` Conditionally evaluate the next code based on the truthiness of the top stack element. If falsy, continue from next `->`.
+ * `if` Conditionally evaluate the next code based on the truthiness of the top stack element. If falsy, continue from next `then`.
  * `then` Marker to identify branch end.
+ * `do` Repeat the following word n times, where n is the value of the top stack element.
 
 ### Boolean operators
 
