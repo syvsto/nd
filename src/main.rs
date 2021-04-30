@@ -128,6 +128,8 @@ fn print_help() {
     println!("------------------");
     println!("");
     println!("cat Concatenate top stack element to the following stack element.");
+    println!("trm Transmute the top stack element into individual elements.");
+    println!("len Push the length of the top stack element onto the stack.");
     println!("");
     println!("Stack manipulation");
     println!("------------------");
@@ -135,6 +137,7 @@ fn print_help() {
     println!("dup Duplicate top stack element.");
     println!("pop Pop top stack element.");
     println!("swp Swap the top two stack elements.");
+    println!("rot Move the bottom stack element to the top.");
     println!("clr Clear the stack.");
     println!("clr1 Clear all but the top stack element.");
     println!("");

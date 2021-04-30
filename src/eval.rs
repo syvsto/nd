@@ -7,6 +7,7 @@ use std::collections::HashMap;
 enum ControlFlow {
     SkipToThen,
     Continue,
+    Repeat(usize),
 }
 
 impl Builtins {
@@ -62,6 +63,15 @@ impl Builtins {
                 }
             }
 
+            Do => {
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let n = match n1 {
+                    A::F(n) => n[0],
+                    _ => return Err(ErrorType::Eval),
+                };
+                return Ok(ControlFlow::Repeat(n as usize));
+            }
+
             And => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
@@ -83,6 +93,25 @@ impl Builtins {
                 stack.push(r);
             }
 
+            Len => {
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                let l = n1.len();
+                stack.push(n1);
+                stack.push(A::F(vec![l as f32]));
+            }
+
+            Transmute => {
+                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
+                match &n1 {
+                    A::F(a) => for v in a {
+                        stack.push(A::F(vec![*v]));
+                    },
+                    A::C(a) => for v in a {
+                        stack.push(A::C(vec![*v]));
+                    }
+                }
+            }
+
             Duplicate => {
                 let n = stack.pop().ok_or(ErrorType::Eval)?;
                 stack.push(n.clone());
@@ -94,6 +123,13 @@ impl Builtins {
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
                 stack.push(n1);
                 stack.push(n2);
+            }
+
+            Rotate => {
+                if let Some((first, rest)) = stack.clone().split_first() {
+                    *stack = rest.to_vec();
+                    stack.push(first.clone());
+                }
             }
 
             Clear => {
@@ -142,6 +178,17 @@ pub fn eval(
                         .iter()
                         .position(|x| x == &Builtin(Builtins::Forward))
                         .ok_or(ErrorType::Eval)?;
+                }
+                ControlFlow::Repeat(n) => {
+                    i += 1;
+                    if i < ast.len() {
+                        let f = &ast[i];
+                        for _ in 0..n {
+                            let _ = eval(&vec![f.clone()], stack, words, debug);
+                        }
+                    } else {
+                        return Err(ErrorType::Eval);
+                    }
                 }
                 ControlFlow::Continue => {}
             },

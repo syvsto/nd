@@ -38,12 +38,15 @@ All arithmetic operators repeat the top stack element, so `[ 1 2 3 ] 1 +` evalua
 ### In-element manipulation
 
  * `cat` Concatenate top stack element to the following stack element.
+ * `trm` Transmute the top stack element into individual elements.
+ * `len` Push the length of the top stack element onto the stack.
 
 ### Stack manipulation
 
  * `dup` Duplicate top stack element.
  * `pop` Pop top stack element.
  * `swp` Swap the top two stack elements.
+ * `rot` Move the bottom stack element to the top.
  * `clr` Clear the stack.
  * `clr1` Clear all but the top stack element.
 
