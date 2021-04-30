@@ -199,16 +199,15 @@ fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
                 res.push(Lexeme::new(l.trim(), Number));
             }
             a if !a.is_whitespace() => {
-                let p = cs.clone().position(|c| c.is_whitespace()).unwrap_or(1);
-                let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
+                let mut s = String::new();
                 while let Some(cm) = cs.peek() {
                     if !cm.is_whitespace() {
-                        cs.next();
+                        s.push(cs.next().ok_or(ErrorType::Parse)?);
                     } else {
                         break;
                     }
                 }
-                match l.as_ref() {
+                match s.as_ref() {
                     "and" => res.push(Lexeme::new("and", And)),
                     "or" => res.push(Lexeme::new("or", Or)),
                     "+" => res.push(Lexeme::new("+", Plus)),
@@ -225,7 +224,7 @@ fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
                     "if" => res.push(Lexeme::new("if", If)),
                     "then" => res.push(Lexeme::new("then", Forward)),
                     "_" => res.push(Lexeme::new("_", Print)),
-                    _ => res.push(Lexeme::new(l.trim(), Word)),
+                    _ => res.push(Lexeme::new(s.trim(), Word)),
                 }
             }
             _ => {}
