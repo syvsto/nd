@@ -1,0 +1,9 @@
+: over    len swp trm rot 1 - ;
+: sum     over do + ;
+: prod    over do + ;
+: _clr    _ clr ;
+
+"The sum should be 6." _clr
+[ 1 2 3 ] sum _clr
+"The prod should be 6." _clr
+[ 1 2 3 ] prod _clr
