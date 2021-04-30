@@ -62,6 +62,7 @@ fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast
                         if buffer.len() > 5 && &buffer[..i] == ".load" {
                             let file = fs::read_to_string(&buffer[i..].trim())
                                 .expect("Invalid file name.");
+                            println!("");
                             for line in file.lines() {
                                 run(&line, stack, words, debugging);
                             }
@@ -84,29 +85,9 @@ fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast
                     let l = buffer.len();
                     if l >= 1 {
                         match &buffer[l - 1..] {
-                            "d" => {
-                                print_char_in_place(buffer, Some('▶'));
-                            }
-                            "p" => {
-                                print_char_in_place(buffer, Some('◀'));
-                            }
-                            "#" => {
-                                print_char_in_place(buffer, Some('◆'));
-                            }
-                            "!" => {
-                                print_char_in_place(buffer, Some('▮'));
-                            }
                             "?" => {
-                                print_char_in_place(buffer, Some('▯'));
-                            }
-                            ">" => {
-                                print_char_in_place(buffer, Some('→'));
-                            }
-                            "^" => {
-                                print_char_in_place(buffer, Some('⋀'));
-                            }
-                            "v" => {
-                                print_char_in_place(buffer, Some('⋁'));
+                                print_help();
+                                buffer.clear();
                             }
                             _ => {}
                         }
@@ -122,6 +103,48 @@ fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast
         }
     }
     Ok(())
+}
+
+fn print_help() {
+    println!("Builtin functions");
+    println!("=================");
+    println!("");
+    println!("Equality");
+    println!("--------");
+    println!("");
+    println!("eql Test value-wise equality between top two stack elements.");
+    println!("");
+    println!("Arithmetic");
+    println!("----------");
+    println!("");
+    println!("+ Value-wise addition between top two stack elements.");
+    println!("- Value-wise subtraction between top two stack elements.");
+    println!("* Value-wise multiplication between top two stack elements.");
+    println!("/ Value-wise division between top two stack elements.");
+    println!("");
+    println!("All arithmetic operators repeat the top stack element, so [ 1 2 3 ] 1 + evaluates to [ 2 3 4 ].");
+    println!("");
+    println!("Array manipulation");
+    println!("------------------");
+    println!("");
+    println!("cat Concatenate top stack element to the following stack element.");
+    println!("");
+    println!("Stack manipulation");
+    println!("------------------");
+    println!("");
+    println!("dup Duplicate top stack element.");
+    println!("pop Pop top stack element.");
+    println!("swp Swap the top two stack elements.");
+    println!("clr Clear the stack.");
+    println!("clr1 Clear all but the top stack element.");
+    println!("");
+    println!("Definitions");
+    println!("-----------");
+    println!("");
+    println!(": Start word definition.");
+    println!("; End word definition.");
+    println!("[ Start element definition. If element only contains a single value, the brackets can be omitted.");
+    println!("] End element definition.");
 }
 
 fn print_char_in_place(buffer: &mut String, c: Option<char>) {
