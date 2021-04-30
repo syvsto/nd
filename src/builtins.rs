@@ -6,7 +6,7 @@ pub fn plus(a: A, b: A) -> Result<A, ErrorType> {
         (A::F(a_), A::F(b_)) => {
             let r: Vec<_> = a_
                 .iter()
-                .zip(b_.iter())
+                .zip(b_.iter().cycle())
                 .map(|(a__, b__)| a__ + b__)
                 .collect();
             Ok(A::F(r))
@@ -22,7 +22,7 @@ pub fn minus(a: A, b: A) -> Result<A, ErrorType> {
         (A::F(a_), A::F(b_)) => {
             let r: Vec<_> = a_
                 .iter()
-                .zip(b_.iter())
+                .zip(b_.iter().cycle())
                 .map(|(a__, b__)| a__ - b__)
                 .collect();
             Ok(A::F(r))
@@ -38,7 +38,7 @@ pub fn multiply(a: A, b: A) -> Result<A, ErrorType> {
         (A::F(a_), A::F(b_)) => {
             let r: Vec<_> = a_
                 .iter()
-                .zip(b_.iter())
+                .zip(b_.iter().cycle())
                 .map(|(a__, b__)| a__ - b__)
                 .collect();
             Ok(A::F(r))
@@ -54,7 +54,7 @@ pub fn divide(a: A, b: A) -> Result<A, ErrorType> {
         (A::F(a_), A::F(b_)) => {
             let r: Vec<_> = a_
                 .iter()
-                .zip(b_.iter())
+                .zip(b_.iter().cycle())
                 .map(|(a__, b__)| a__ - b__)
                 .collect();
             Ok(A::F(r))
@@ -70,7 +70,7 @@ pub fn and(a: A, b: A) -> Result<A, ErrorType> {
         (A::F(a_), A::F(b_)) => {
             let r: Vec<_> = a_
                 .iter()
-                .zip(b_.iter())
+                .zip(b_.iter().cycle())
                 .map(|(a__, b__)| a__ - b__)
                 .collect();
             Ok(A::F(r))
@@ -86,7 +86,7 @@ pub fn or(a: A, b: A) -> Result<A, ErrorType> {
         (A::F(a_), A::F(b_)) => {
             let r: Vec<_> = a_
                 .iter()
-                .zip(b_.iter())
+                .zip(b_.iter().cycle())
                 .map(|(a__, b__)| a__ - b__)
                 .collect();
             Ok(A::F(r))
