@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 
-use crate::data::{vf_to_u8, Ty, A};
+use crate::data::A;
 use crate::errors::ErrorType;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -77,30 +77,14 @@ impl Token {
         let t = match l.ty {
             LexemeType::Number => {
                 let n = l.string.parse::<f32>()?;
-                Token::Data(A::new_f(n))
+                Token::Data(A::F(vec![n]))
             }
-            LexemeType::Str => {
-                let len = l.string.len();
-                Token::Data(A::new(
-                    Ty::C,
-                    1,
-                    len,
-                    vec![len],
-                    l.string.as_bytes().to_vec(),
-                ))
-            }
+            LexemeType::Str => Token::Data(A::C(l.string.chars().collect::<Vec<_>>())),
             LexemeType::Array => {
                 let ws = l.string.split_whitespace();
                 let ns: Result<Vec<_>, _> = ws.map(|w| w.parse::<f32>()).into_iter().collect();
                 let ns = ns?;
-                let len = ns.len();
-                Token::Data(A::new(
-                    Ty::F,
-                    1,
-                    len,
-                    vec![len],
-                    vf_to_u8(ns.as_slice()).to_vec(),
-                ))
+                Token::Data(A::F(ns))
             }
             LexemeType::Definition => {
                 let ws = lex(&l.string)?;
@@ -202,22 +186,6 @@ fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
                 }
                 res.push(Lexeme::new(l.trim(), Definition));
             }
-            '⋀' => res.push(Lexeme::new("⋀", And)),
-            '⋁' => res.push(Lexeme::new("⋁", Or)),
-            '+' => res.push(Lexeme::new("+", Plus)),
-            '-' => res.push(Lexeme::new("-", Minus)),
-            '*' => res.push(Lexeme::new("*", Multiply)),
-            '/' => res.push(Lexeme::new("/", Divide)),
-            ',' => res.push(Lexeme::new(",", Concat)),
-            '▶' => res.push(Lexeme::new("▶", Duplicate)),
-            '◀' => res.push(Lexeme::new("◀", Pop)),
-            '◆' => res.push(Lexeme::new("◆", Swap)),
-            '▮' => res.push(Lexeme::new("▮", Clear)),
-            '▯' => res.push(Lexeme::new("▯", ClearButOne)),
-            '=' => res.push(Lexeme::new("=", Equal)),
-            '?' => res.push(Lexeme::new("?", If)),
-            '→' => res.push(Lexeme::new("→", Forward)),
-            '_' => res.push(Lexeme::new("_", Print)),
             a if a.is_digit(10) => {
                 let p = cs.clone().position(|c| c.is_whitespace()).unwrap_or(1);
                 let l: String = cs.clone().collect::<Vec<_>>()[..p].into_iter().collect();
@@ -240,7 +208,25 @@ fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {
                         break;
                     }
                 }
-                res.push(Lexeme::new(l.trim(), Word));
+                match l.as_ref() {
+                    "and" => res.push(Lexeme::new("and", And)),
+                    "or" => res.push(Lexeme::new("or", Or)),
+                    "+" => res.push(Lexeme::new("+", Plus)),
+                    "-" => res.push(Lexeme::new("-", Minus)),
+                    "*" => res.push(Lexeme::new("*", Multiply)),
+                    "/" => res.push(Lexeme::new("/", Divide)),
+                    "cat" => res.push(Lexeme::new("cat", Concat)),
+                    "dup" => res.push(Lexeme::new("dup", Duplicate)),
+                    "pop" => res.push(Lexeme::new("pop", Pop)),
+                    "swp" => res.push(Lexeme::new("swp", Swap)),
+                    "clr" => res.push(Lexeme::new("clr", Clear)),
+                    "clr1" => res.push(Lexeme::new("clr1", ClearButOne)),
+                    "eql" => res.push(Lexeme::new("eql", Equal)),
+                    "if" => res.push(Lexeme::new("if", If)),
+                    "then" => res.push(Lexeme::new("then", Forward)),
+                    "_" => res.push(Lexeme::new("_", Print)),
+                    _ => res.push(Lexeme::new(l.trim(), Word)),
+                }
             }
             _ => {}
         }

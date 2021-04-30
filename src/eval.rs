@@ -71,7 +71,7 @@ impl Builtins {
             Concat => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                let r = builtins::concat(n1, n2);
+                let r = builtins::concat(n1, n2)?;
                 stack.push(r);
             }
 
