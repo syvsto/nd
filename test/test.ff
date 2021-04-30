@@ -1,4 +1,11 @@
 : a2      2 cat ;
 : a4      4 cat ;
 
-2 a2 [ 2 2 ] eql if 4 a4 then 6 + [ 10 10 ] eql _ # Should evaluate to 1
+2 a2 [ 2 2 ] eql
+if 4 a4 then 6 + [ 10 10 ] eql _   # 1
+
+"abc" "123" eql 1 + _              # 1
+
+and 0 cat [ 1 0 ] or _             # [ 1 1 ]
+
+
