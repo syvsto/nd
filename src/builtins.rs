@@ -6,11 +6,22 @@ pub fn plus(a: A, b: A) -> Result<A, ErrorType> {
         (Ty::F, Ty::F) => {
             let mut r = A::new(Ty::F, a.r, a.l, a.s.clone(), vec![0; a.l]);
             let mut v = Vec::with_capacity(a.l);
-            for n in b.s.iter() {
-                for i in 0..*n {
-                    let i = i * 4;
-                    let f = u8_f(&a.c[i..i + 4]) + u8_f(&b.c[i..i + 4]);
-                    v.push(f);
+            match b.r {
+                0 => {
+                    for i in 0..a.l {
+                        let i = i * 4;
+                        let f = u8_f(&a.c[i..i + 4]) + u8_f(&b.c[0..4]);
+                        v.push(f);
+                    }
+                }
+                _ => {
+                    for n in b.s.iter() {
+                        for i in 0..*n {
+                            let i = i * 4;
+                            let f = u8_f(&a.c[i..i + 4]) + u8_f(&b.c[i..i + 4]);
+                            v.push(f);
+                        }
+                    }
                 }
             }
             r.c = vf_to_u8(&v).to_vec();
@@ -27,11 +38,20 @@ pub fn minus(a: A, b: A) -> Result<A, ErrorType> {
         (Ty::F, Ty::F) => {
             let mut r = A::new(Ty::F, a.r, a.l, a.s.clone(), vec![0; a.l]);
             let mut v = Vec::with_capacity(a.l);
-            for n in b.s.iter() {
-                for i in 0..*n {
-                    let i = i * 4;
-                    let f = u8_f(&a.c[i..i + 4]) - u8_f(&b.c[i..i + 4]);
-                    v.push(f);
+            match b.r {
+                0 => {
+                    for i in 0..a.l {
+                        let i = i * 4;
+                        let f = u8_f(&a.c[i..i + 4]) - u8_f(&b.c[0..4]);
+                        v.push(f);
+                    }
+                }
+                _ => for n in b.s.iter() {
+                    for i in 0..*n {
+                        let i = i * 4;
+                        let f = u8_f(&a.c[i..i + 4]) - u8_f(&b.c[i..i + 4]);
+                        v.push(f);
+                    }
                 }
             }
             r.c = vf_to_u8(&v).to_vec();
@@ -48,11 +68,20 @@ pub fn multiply(a: A, b: A) -> Result<A, ErrorType> {
         (Ty::F, Ty::F) => {
             let mut r = A::new(Ty::F, a.r, a.l, a.s.clone(), vec![0; a.l]);
             let mut v = Vec::with_capacity(a.l);
-            for n in b.s.iter() {
-                for i in 0..*n {
-                    let i = i * 4;
-                    let f = u8_f(&a.c[i..i + 4]) * u8_f(&b.c[i..i + 4]);
-                    v.push(f);
+            match b.r {
+                0 => {
+                    for i in 0..a.l {
+                        let i = i * 4;
+                        let f = u8_f(&a.c[i..i + 4]) * u8_f(&b.c[0..4]);
+                        v.push(f);
+                    }
+                }
+                _ => for n in b.s.iter() {
+                    for i in 0..*n {
+                        let i = i * 4;
+                        let f = u8_f(&a.c[i..i + 4]) * u8_f(&b.c[i..i + 4]);
+                        v.push(f);
+                    }
                 }
             }
             r.c = vf_to_u8(&v).to_vec();
@@ -69,11 +98,20 @@ pub fn divide(a: A, b: A) -> Result<A, ErrorType> {
         (Ty::F, Ty::F) => {
             let mut r = A::new(Ty::F, a.r, a.l, a.s.clone(), vec![0; a.l]);
             let mut v = Vec::with_capacity(a.l);
-            for n in b.s.iter() {
-                for i in 0..*n {
-                    let i = i * 4;
-                    let f = u8_f(&a.c[i..i + 4]) / u8_f(&b.c[i..i + 4]);
-                    v.push(f);
+            match b.r {
+                0 => {
+                    for i in 0..a.l {
+                        let i = i * 4;
+                        let f = u8_f(&a.c[i..i + 4]) / u8_f(&b.c[0..4]);
+                        v.push(f);
+                    }
+                }
+                _ => for n in b.s.iter() {
+                    for i in 0..*n {
+                        let i = i * 4;
+                        let f = u8_f(&a.c[i..i + 4]) / u8_f(&b.c[i..i + 4]);
+                        v.push(f);
+                    }
                 }
             }
             r.c = vf_to_u8(&v).to_vec();

@@ -17,7 +17,7 @@ impl Builtins {
             Plus => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                let r = builtins::plus(n1, n2)?;
+                let r = builtins::plus(n2, n1)?;
                 stack.push(r);
             }
 
@@ -31,21 +31,21 @@ impl Builtins {
             Minus => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                let r = builtins::minus(n1, n2)?;
+                let r = builtins::minus(n2, n1)?;
                 stack.push(r);
             }
 
             Multiply => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                let r = builtins::multiply(n1, n2)?;
+                let r = builtins::multiply(n2, n1)?;
                 stack.push(r);
             }
 
             Divide => {
                 let n1 = stack.pop().ok_or(ErrorType::Eval)?;
                 let n2 = stack.pop().ok_or(ErrorType::Eval)?;
-                let r = builtins::divide(n1, n2)?;
+                let r = builtins::divide(n2, n1)?;
                 stack.push(r);
             }
 
