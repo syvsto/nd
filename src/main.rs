@@ -3,8 +3,8 @@ use std::env;
 use std::fs;
 use std::io::{self, Write};
 
-mod data;
 mod builtins;
+mod data;
 mod errors;
 mod eval;
 mod parser;
@@ -58,10 +58,10 @@ fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast
                     if buffer.trim() == ".debug" {
                         debugging = !debugging;
                     }
-                    if let Some(i) = buffer.char_indices().map(|(i,_)| i).nth(5) {
+                    if let Some(i) = buffer.char_indices().map(|(i, _)| i).nth(5) {
                         if buffer.len() > 5 && &buffer[..i] == ".load" {
-                            let file =
-                                fs::read_to_string(&buffer[i..].trim()).expect("Invalid file name.");
+                            let file = fs::read_to_string(&buffer[i..].trim())
+                                .expect("Invalid file name.");
                             for line in file.lines() {
                                 run(&line, stack, words, debugging);
                             }

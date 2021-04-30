@@ -1,7 +1,7 @@
+use crate::builtins;
 use crate::data::A;
 use crate::errors::ErrorType;
 use crate::parser::{Ast, Builtins, Token};
-use crate::builtins;
 use std::collections::HashMap;
 
 impl Builtins {
@@ -104,7 +104,7 @@ impl Builtins {
                 stack.pop().ok_or(ErrorType::Eval)?;
             }
 
-            Forward => {},
+            Forward => {}
         }
         Ok(())
     }

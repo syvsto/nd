@@ -1,5 +1,5 @@
+use crate::data::{u8_f, u8_to_vf, vf_to_u8, Ty, A};
 use crate::errors::ErrorType;
-use crate::data::{Ty, u8_f, u8_to_vf, vf_to_u8, A};
 
 pub fn plus(a: A, b: A) -> Result<A, ErrorType> {
     match (&a.ty, &b.ty) {
@@ -16,7 +16,9 @@ pub fn plus(a: A, b: A) -> Result<A, ErrorType> {
             r.c = vf_to_u8(&v).to_vec();
             Ok(r)
         }
-        _ => Err(ErrorType::Msg("Couldn't add values, not all values were numbers.".to_string())),
+        _ => Err(ErrorType::Msg(
+            "Couldn't add values, not all values were numbers.".to_string(),
+        )),
     }
 }
 
@@ -35,7 +37,9 @@ pub fn minus(a: A, b: A) -> Result<A, ErrorType> {
             r.c = vf_to_u8(&v).to_vec();
             Ok(r)
         }
-        _ => Err(ErrorType::Msg("Couldn't add values, not all values were numbers.".to_string())),
+        _ => Err(ErrorType::Msg(
+            "Couldn't add values, not all values were numbers.".to_string(),
+        )),
     }
 }
 
@@ -54,7 +58,9 @@ pub fn multiply(a: A, b: A) -> Result<A, ErrorType> {
             r.c = vf_to_u8(&v).to_vec();
             Ok(r)
         }
-        _ => Err(ErrorType::Msg("Couldn't add values, not all values were numbers.".to_string())),
+        _ => Err(ErrorType::Msg(
+            "Couldn't add values, not all values were numbers.".to_string(),
+        )),
     }
 }
 
@@ -73,7 +79,9 @@ pub fn divide(a: A, b: A) -> Result<A, ErrorType> {
             r.c = vf_to_u8(&v).to_vec();
             Ok(r)
         }
-        _ => Err(ErrorType::Msg("Couldn't add values, not all values were numbers.".to_string())),
+        _ => Err(ErrorType::Msg(
+            "Couldn't add values, not all values were numbers.".to_string(),
+        )),
     }
 }
 
@@ -92,7 +100,9 @@ pub fn and(a: A, b: A) -> Result<A, ErrorType> {
             }
             Ok(A::new_f(t))
         }
-        _ => Err(ErrorType::Msg("Couldn't add values, not all values were numbers.".to_string())),
+        _ => Err(ErrorType::Msg(
+            "Couldn't add values, not all values were numbers.".to_string(),
+        )),
     }
 }
 
@@ -111,7 +121,9 @@ pub fn or(a: A, b: A) -> Result<A, ErrorType> {
             }
             Ok(A::new_f(t))
         }
-        _ => Err(ErrorType::Msg("Couldn't add values, not all values were numbers.".to_string())),
+        _ => Err(ErrorType::Msg(
+            "Couldn't add values, not all values were numbers.".to_string(),
+        )),
     }
 }
 
@@ -133,10 +145,9 @@ pub fn equal(a: A, b: A) -> A {
     if a == b {
         A::new_f(1.)
     } else {
-       A::new_f(0.)
+        A::new_f(0.)
     }
 }
-
 
 pub fn concat(a: A, b: A) -> A {
     let s: Vec<_> = a.s.iter().zip(b.s.iter()).map(|(a, b)| a + b).collect();
