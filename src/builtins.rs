@@ -97,13 +97,13 @@ pub fn or(a: A, b: A) -> Result<A, ErrorType> {
     }
 }
 
-pub fn iff(a: A) -> Result<(), ErrorType> {
+pub fn iff(a: A) -> Result<bool, ErrorType> {
     match &a {
         A::F(f) => {
-            if f[0] > 0. {
-                Ok(())
+            if f.iter().fold(0., |acc, x| acc + x) > 0. {
+                Ok(false)
             } else {
-                Ok(())
+                Ok(true)
             }
         }
         _ => Err(ErrorType::Eval),

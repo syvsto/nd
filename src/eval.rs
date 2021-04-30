@@ -4,8 +4,13 @@ use crate::errors::ErrorType;
 use crate::parser::{Ast, Builtins, Token};
 use std::collections::HashMap;
 
+enum ControlFlow {
+    SkipToThen,
+    Continue,
+}
+
 impl Builtins {
-    fn eval(&self, stack: &mut Vec<A>) -> Result<(), ErrorType> {
+    fn eval(&self, stack: &mut Vec<A>) -> Result<ControlFlow, ErrorType> {
         use Builtins::*;
         match self {
             Print => {
@@ -51,7 +56,10 @@ impl Builtins {
 
             If => {
                 let a = stack.pop().ok_or(ErrorType::Eval)?;
-                builtins::iff(a)?;
+                let c = builtins::iff(a)?;
+                if c {
+                    return Ok(ControlFlow::SkipToThen);
+                }
             }
 
             And => {
@@ -106,7 +114,7 @@ impl Builtins {
 
             Forward => {}
         }
-        Ok(())
+        Ok(ControlFlow::Continue)
     }
 }
 
@@ -128,9 +136,15 @@ pub fn eval(
                 }
             }
             Data(data) => stack.push(data.clone()),
-            Builtin(func) => {
-                let _ = func.eval(stack)?;
-            }
+            Builtin(func) => match func.eval(stack)? {
+                ControlFlow::SkipToThen => {
+                    i += ast[i..]
+                        .iter()
+                        .position(|x| x == &Builtin(Builtins::Forward))
+                        .ok_or(ErrorType::Eval)?;
+                }
+                ControlFlow::Continue => {}
+            },
             Definition(_) => {}
         }
         i += 1;
