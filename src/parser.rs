@@ -151,10 +151,6 @@ pub enum Builtins {
     And,
     Or,
     Forward,
-    WordStart,
-    WordEnd,
-    ArrayStart,
-    ArrayEnd,
 }
 
 fn lex(buf: &str) -> Result<Vec<Lexeme>, ErrorType> {

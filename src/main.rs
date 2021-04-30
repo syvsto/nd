@@ -4,9 +4,11 @@ use std::fs;
 use std::io::{self, Write};
 
 mod data;
+mod builtins;
 mod errors;
 mod eval;
 mod parser;
+
 use data::A;
 use eval::eval;
 use parser::Ast;
@@ -17,7 +19,7 @@ use crossterm::{
     execute, terminal, Result,
 };
 
-fn main() -> io::Result<()> {
+fn main() -> Result<()> {
     let mut buffer = String::new();
 
     let mut stack = Vec::new();
@@ -30,7 +32,7 @@ fn main() -> io::Result<()> {
             run(&line, &mut stack, &mut words, false);
         }
     } else {
-        repl(&mut buffer, &mut stack, &mut words);
+        repl(&mut buffer, &mut stack, &mut words)?;
     }
     Ok(())
 }
@@ -124,7 +126,7 @@ fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast
 
 fn print_char_in_place(buffer: &mut String, c: Option<char>) {
     let _ = buffer.pop();
-    execute!(
+    let _ = execute!(
         io::stdout(),
         cursor::MoveLeft(1),
         terminal::Clear(terminal::ClearType::UntilNewLine)

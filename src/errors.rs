@@ -5,6 +5,7 @@ use std::fmt;
 pub enum ErrorType {
     Parse,
     Eval,
+    Msg(String),
 }
 
 impl fmt::Display for ErrorType {
@@ -12,6 +13,7 @@ impl fmt::Display for ErrorType {
         match self {
             ErrorType::Parse => write!(f, "Couldn't parse"),
             ErrorType::Eval => write!(f, "Couldn't eval"),
+            ErrorType::Msg(m) => write!(f, "{}", m),
         }
     }
 }
