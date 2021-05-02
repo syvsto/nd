@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
+use std::marker::Sized;
 
 mod builtins;
 mod data;
@@ -37,7 +38,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>) -> Result<()> {
+fn repl(buffer: &mut String, stack: &mut Vec<A<dyn Sized>>, words: &mut HashMap<String, Ast>) -> Result<()> {
     let mut debugging = false;
 
     loop {
@@ -176,7 +177,7 @@ fn print_char_in_place(buffer: &mut String, c: Option<char>) {
     io::stdout().flush().unwrap();
 }
 
-fn run(buffer: &str, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>, debugging: bool) {
+fn run<T: Sized>(buffer: &str, stack: &mut Vec<A<dyn Sized>>, words: &mut HashMap<String, Ast>, debugging: bool) {
     match parser::parse(buffer) {
         Ok((tokens, w)) => {
             words.extend(w);
