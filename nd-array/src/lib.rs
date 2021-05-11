@@ -1,7 +1,8 @@
 use std::ops::Index;
 use std::marker::Sized;
+use std::slice::{Iter, IterMut};
 
-/// Row-major n-dimensional array
+/// Row-major 3-dimensional array
 #[derive(Debug)]
 pub struct A3<T>
   where T: Sized + Clone {
@@ -15,7 +16,16 @@ impl<T> A3<T>
             shape, data: data.to_vec()
         }
     }
+
+    pub fn iter(&self) -> Iter<'_, T> {
+        self.data.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.data.iter_mut()
+    }
 }
+
 impl<T: Sized + Clone> Index<[usize; 3]> for A3<T> {
     type Output = T;
 
@@ -24,7 +34,7 @@ impl<T: Sized + Clone> Index<[usize; 3]> for A3<T> {
     }
 }
 
-/// Row-major n-dimensional array
+/// Row-major 2-dimensional array
 #[derive(Debug)]
 pub struct A2<T>
   where T: Sized + Clone {
@@ -38,6 +48,14 @@ impl<T> A2<T>
             shape, data: data.to_vec()
         }
     }
+
+    pub fn iter(&self) -> Iter<'_, T> {
+        self.data.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.data.iter_mut()
+    }
 }
 impl<T: Sized + Clone> Index<[usize; 2]> for A2<T> {
     type Output = T;
@@ -47,7 +65,7 @@ impl<T: Sized + Clone> Index<[usize; 2]> for A2<T> {
     }
 }
 
-/// Row-major n-dimensional array
+/// Row-major 1-dimensional array
 #[derive(Debug)]
 pub struct A1<T>
   where T: Sized + Clone {
@@ -61,7 +79,16 @@ impl<T> A1<T>
             shape: [shape], data: data.to_vec()
         }
     }
+
+    pub fn iter(&self) -> Iter<'_, T> {
+        self.data.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.data.iter_mut()
+    }
 }
+
 impl<T: Sized + Clone> Index<usize> for A1<T> {
     type Output = T;
 
@@ -69,13 +96,6 @@ impl<T: Sized + Clone> Index<usize> for A1<T> {
         &self.data[idx]
     }
 }
-
-// impl<T: Sized + Clone> Iterator for A<T> {
-//     type Output = T;
-//     fn next(&mut self) -> Option<Self::Item> {
-        
-//     }
-// }
 
 #[macro_export]
 macro_rules! a {
