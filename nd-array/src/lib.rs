@@ -1,6 +1,16 @@
 use std::ops::Index;
 use std::marker::Sized;
-use std::slice::{Iter, IterMut};
+use std::slice;
+
+mod iter;
+
+use iter::Iter;
+
+pub trait Array {}
+
+impl<T: Clone + Sized> Array for A3<T> {}
+impl<T: Clone + Sized> Array for A2<T> {}
+impl<T: Clone + Sized> Array for A1<T> {}
 
 /// Row-major 3-dimensional array
 #[derive(Debug)]
@@ -17,12 +27,8 @@ impl<T> A3<T>
         }
     }
 
-    pub fn iter(&self) -> Iter<'_, T> {
-        self.data.iter()
-    }
-
-    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
-        self.data.iter_mut()
+    pub fn iter(&self) -> Iter<slice::Iter<'_, T>> {
+        Iter::new(self.data.iter(), &self.shape)
     }
 }
 
@@ -49,12 +55,8 @@ impl<T> A2<T>
         }
     }
 
-    pub fn iter(&self) -> Iter<'_, T> {
-        self.data.iter()
-    }
-
-    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
-        self.data.iter_mut()
+    pub fn iter(&self) -> Iter<slice::Iter<'_, T>> {
+        Iter::new(self.data.iter(), &self.shape)
     }
 }
 impl<T: Sized + Clone> Index<[usize; 2]> for A2<T> {
@@ -80,12 +82,8 @@ impl<T> A1<T>
         }
     }
 
-    pub fn iter(&self) -> Iter<'_, T> {
-        self.data.iter()
-    }
-
-    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
-        self.data.iter_mut()
+    pub fn iter(&self) -> Iter<slice::Iter<'_, T>> {
+        Iter::new(self.data.iter(), &self.shape)
     }
 }
 
@@ -130,15 +128,29 @@ mod tests {
 
     #[test]
     fn index() {
-        let b = a!([1, 2]);
-        let c = a!([[1, 2], [3, 4]]);
-        let d = a!([[[1, 2, 3], [3, 4, 5]], [[5, 6, 7], [7, 8, 9]]]);
+        let a = a!([1, 2]);
+        let b = a!([[1, 2], [3, 4]]);
+        let c = a!([[[1, 2, 3], [3, 4, 5]], [[5, 6, 7], [7, 8, 9]]]);
 
         let ix0 = 1;
         let ix1 = [1, 0];
         let ix2 = [2, 1, 0];
-        assert!(b[ix0] == 2);
-        assert!(c[ix1] == 2);
-        assert!(d[ix2] == 5);
+        assert!(a[ix0] == 2);
+        assert!(b[ix1] == 2);
+        assert!(c[ix2] == 5);
+    }
+
+    #[test]
+    fn iter() {
+        let a = a!([1, 2]);
+        let b = a!([[1, 2], [3, 4]]);
+        let c = a!([[[1, 2, 3], [3, 4, 5]], [[5, 6, 7], [7, 8, 9]]]);
+        let r_a = vec![2, 3];
+        let r_b = vec![2, 3, 4, 5];
+        let r_c = vec![2, 3, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10];
+
+        assert!(r_a == a.iter().map(|x| x + 1).collect::<Vec<_>>());
+        assert!(r_b == b.iter().map(|x| x + 1).collect::<Vec<_>>());
+        assert!(r_c == c.iter().map(|x| x + 1).collect::<Vec<_>>());
     }
 }
