@@ -1,7 +1,6 @@
+use crate::array::A;
 use crate::builtins;
-use crate::data::A;
-use crate::errors::ErrorType;
-use crate::parser::{Ast, Builtins, Token};
+use crate::{errors::ErrorType, parser::{Ast, Builtins, Token}};
 use std::collections::HashMap;
 
 enum ControlFlow {
@@ -64,12 +63,14 @@ impl Builtins {
             }
 
             Do => {
-                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
-                let n = match n1 {
-                    A::F(n) => n[0],
-                    _ => return Err(ErrorType::Eval),
-                };
-                return Ok(ControlFlow::Repeat(n as usize));
+                let a = stack.pop().ok_or(ErrorType::Eval)?;
+                let x =
+                    a.d.first()
+                        .map(|x| x.as_f64())
+                        .flatten()
+                        .ok_or(ErrorType::Eval)?;
+
+                return Ok(ControlFlow::Repeat(x as usize));
             }
 
             And => {
@@ -94,21 +95,16 @@ impl Builtins {
             }
 
             Len => {
-                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
-                let l = n1.len();
-                stack.push(n1);
-                stack.push(A::F(vec![l as f32]));
+                let a = stack.pop().ok_or(ErrorType::Eval)?;
+                let l = a.d.len();
+                stack.push(a);
+                stack.push(A::from_num(l as f64));
             }
 
             Transmute => {
-                let n1 = stack.pop().ok_or(ErrorType::Eval)?;
-                match &n1 {
-                    A::F(a) => for v in a {
-                        stack.push(A::F(vec![*v]));
-                    },
-                    A::C(a) => for v in a {
-                        stack.push(A::C(vec![*v]));
-                    }
+                let a = stack.pop().ok_or(ErrorType::Eval)?;
+                for x in a.d {
+                    stack.push(A::new(1, vec![x]));
                 }
             }
 

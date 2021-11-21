@@ -2,15 +2,14 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
-use std::marker::Sized;
 
 mod builtins;
-mod data;
+mod array;
 mod errors;
 mod eval;
 mod parser;
 
-use data::A;
+use array::A;
 use eval::eval;
 use parser::Ast;
 
@@ -23,7 +22,7 @@ use crossterm::{
 fn main() -> Result<()> {
     let mut buffer = String::new();
 
-    let mut stack = Vec::new();
+    let mut stack: Vec<A> = Vec::new();
     let mut words = HashMap::new();
 
     let mut args = env::args();
@@ -38,7 +37,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn repl(buffer: &mut String, stack: &mut Vec<A<dyn Sized>>, words: &mut HashMap<String, Ast>) -> Result<()> {
+fn repl(buffer: &mut String, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>) -> Result<()> {
     let mut debugging = false;
 
     loop {
@@ -177,7 +176,7 @@ fn print_char_in_place(buffer: &mut String, c: Option<char>) {
     io::stdout().flush().unwrap();
 }
 
-fn run<T: Sized>(buffer: &str, stack: &mut Vec<A<dyn Sized>>, words: &mut HashMap<String, Ast>, debugging: bool) {
+fn run(buffer: &str, stack: &mut Vec<A>, words: &mut HashMap<String, Ast>, debugging: bool) {
     match parser::parse(buffer) {
         Ok((tokens, w)) => {
             words.extend(w);

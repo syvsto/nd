@@ -5,7 +5,7 @@ use std::fmt;
 pub enum ErrorType {
     Parse,
     Eval,
-    Msg(String),
+    Msg(&'static str),
 }
 
 impl fmt::Display for ErrorType {

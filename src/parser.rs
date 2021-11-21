@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 
-use crate::data::A;
+use crate::array::A;
 use crate::errors::ErrorType;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -80,15 +80,15 @@ impl Token {
     fn parse(l: &Lexeme) -> Result<Self, Box<dyn Error>> {
         let t = match l.ty {
             LexemeType::Number => {
-                let n = l.string.parse::<f32>()?;
-                Token::Data(A::F(vec![n]))
+                let x = l.string.parse::<f64>()?;
+                Token::Data(A::from_num(x))
             }
-            LexemeType::Str => Token::Data(A::C(l.string.chars().collect::<Vec<_>>())),
+            LexemeType::Str => Token::Data(A::from_str(&l.string)),
             LexemeType::Array => {
                 let ws = l.string.split_whitespace();
-                let ns: Result<Vec<_>, _> = ws.map(|w| w.parse::<f32>()).into_iter().collect();
-                let ns = ns?;
-                Token::Data(A::F(ns))
+                let xs: Result<Vec<_>, _> = ws.map(|w| w.parse::<f64>()).into_iter().collect();
+                let xs = xs?;
+                Token::Data(A::from_nums(&xs))
             }
             LexemeType::Definition => {
                 let ws = lex(&l.string)?;
