@@ -1,7 +1,9 @@
-FunForth 
+nd 
 ========
 
-Language experiment involving concatenation, stacks and arrays, inspired by APL and Forth.
+Language experiment involving concatenation, stacks and arrays, inspired by APL
+and Forth. The name `nd` is a shorthand for n-dimensional, and follows the tradition of
+un-Googleable array language names.
 
 Built-in Words
 --------------
